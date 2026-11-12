@@ -1,0 +1,3022 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>野菜，部落不可缺的味 — 3D 沉浸式閱讀遊戲</title>
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Serif+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --appH: 100vh;
+  --ink: #15110c;
+  --lacquer: rgba(24, 19, 14, 0.94);
+  --lacquer2: rgba(42, 33, 24, 0.95);
+  --gold: #c9a45c;
+  --gold2: #f0d79a;
+  --paper: #f5ebd6;
+  --red: #b8342a;
+  --red2: #e0583f;
+  --jade: #6fae8f;
+  --f-game: 'LXGW WenKai TC', 'Noto Serif TC', serif;
+  --f-title: 'Noto Serif TC', serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+html, body {
+  width: 100vw;
+  height: var(--appH);
+  overflow: hidden;
+  background: #120e0a;
+  color: var(--paper);
+  font-family: var(--f-game);
+  font-size: 20px;
+  line-height: 1.65;
+  touch-action: none;
+}
+#canvasWrap {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: var(--appH);
+  z-index: 1;
+}
+canvas#webgl {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.hide { display: none !important; }
+
+/* Loading Screen - Realistic Classical Style */
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #f4e8cf;
+  color: #6b4a22;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s ease;
+}
+#loading.done {
+  opacity: 0;
+  pointer-events: none;
+}
+.load-title {
+  font-family: var(--f-title);
+  font-size: clamp(30px, 5.5vw, 48px);
+  font-weight: 900;
+  color: #2b2118;
+  letter-spacing: 0.14em;
+  margin-bottom: 18px;
+}
+.load-bar-wrap {
+  width: min(360px, 76vw);
+  height: 12px;
+  background: #efe0c0;
+  border: 1px solid #b99a64;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+#loadBar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #b8342a, #e0583f);
+  transition: width 0.25s;
+}
+#loadTxt {
+  font-size: 20px;
+  font-weight: bold;
+  color: #6b4a22;
+  letter-spacing: 0.08em;
+}
+
+/* Title Screen - Bird Liang Style */
+#title {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: linear-gradient(180deg, rgba(255, 236, 200, 0.35), rgba(250, 226, 186, 0.15) 45%, rgba(240, 214, 170, 0.55));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+}
+.title-card {
+  position: relative;
+  max-width: 840px;
+  width: 94%;
+  background: radial-gradient(ellipse at center, rgba(252, 244, 226, 0.94), rgba(246, 234, 208, 0.85) 75%, rgba(246, 234, 208, 0.3) 100%);
+  border: 2px solid var(--gold);
+  padding: 38px 34px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+}
+.title-badge {
+  display: inline-block;
+  padding: 5px 18px;
+  background: #b8342a;
+  color: #fff6e6;
+  font-family: var(--f-title);
+  font-size: clamp(16px, 2.5vw, 20px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  margin-bottom: 16px;
+}
+.title-main {
+  font-family: var(--f-title);
+  font-size: clamp(32px, 5.5vw, 52px);
+  font-weight: 900;
+  line-height: 1.25;
+  color: #2b2118;
+  letter-spacing: 0.1em;
+  margin-bottom: 14px;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.65);
+}
+.title-sub {
+  font-size: clamp(19px, 2.7vw, 23px);
+  color: #5a3f22;
+  margin-bottom: 28px;
+  line-height: 1.7;
+  font-weight: bold;
+}
+.title-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+.g-btn {
+  cursor: pointer;
+  padding: 13px 30px;
+  font-size: clamp(19px, 2.8vw, 23px);
+  font-weight: bold;
+  font-family: inherit;
+  letter-spacing: 0.12em;
+  color: var(--paper);
+  background: linear-gradient(180deg, #8f2a20, #5e1812);
+  border: 1px solid var(--gold);
+  box-shadow: inset 0 1px 0 rgba(255, 220, 180, 0.35), 0 4px 0 #2c0b08, 0 6px 14px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s, filter 0.2s;
+}
+.g-btn:hover { filter: brightness(1.15); }
+.g-btn:active { transform: translateY(3px); box-shadow: inset 0 1px 0 rgba(255, 220, 180, 0.35), 0 1px 0 #2c0b08; }
+.g-btn.sec {
+  color: var(--paper);
+  background: linear-gradient(180deg, #3a2e22, #221a12);
+  border: 1px solid var(--gold);
+  box-shadow: inset 0 1px 0 rgba(240, 215, 154, 0.25), 0 4px 0 #120d08, 0 6px 14px rgba(0, 0, 0, 0.4);
+}
+
+/* HUD - Ornate Lacquer & Gold Style (Top-Right Buttons Always Above Modals) */
+#hud {
+  pointer-events: none;
+}
+.hud-top-left {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+  max-width: min(470px, 56vw);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
+}
+.stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(90deg, rgba(18, 13, 8, 0.94), rgba(34, 26, 18, 0.90));
+  border: 1px solid var(--gold);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.5), inset 0 0 0 3px rgba(201, 164, 92, 0.25);
+  padding: 9px 16px;
+  font-size: clamp(16px, 2.2vw, 20px);
+  font-weight: bold;
+  color: var(--paper);
+}
+.hp-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hp-bar-bg {
+  width: 96px;
+  height: 14px;
+  background: #0b0806;
+  border: 1px solid var(--gold);
+  transform: skewX(-18deg);
+  overflow: hidden;
+}
+#hpFill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #f07a5c, #b8342a 55%, #7d1d16);
+  transition: width 0.3s;
+}
+.leaf-badge {
+  font-size: clamp(16px, 2.2vw, 20px);
+  color: var(--gold2);
+  font-weight: bold;
+}
+#questBox {
+  position: relative;
+  background: linear-gradient(180deg, var(--lacquer2), var(--lacquer));
+  border: 1px solid var(--gold);
+  border-left: 4px solid var(--red2);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.45);
+  padding: 10px 14px;
+}
+#questTitle {
+  font-family: var(--f-title);
+  font-size: clamp(17px, 2.4vw, 21px);
+  color: var(--gold2);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+#questObj {
+  font-size: clamp(15px, 2.1vw, 19px);
+  color: #e2d5b5;
+  line-height: 1.45;
+}
+
+.hud-top-right {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 85;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 42vw;
+  gap: 8px;
+  pointer-events: auto;
+}
+.icon-btn {
+  cursor: pointer;
+  background: linear-gradient(180deg, #3a2c1f, #1b140d);
+  border: 1px solid var(--gold);
+  color: var(--paper);
+  padding: 8px 14px;
+  font-size: clamp(16px, 2.1vw, 19px);
+  font-family: inherit;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  box-shadow: inset 0 1px 0 rgba(240, 215, 154, 0.25), 0 4px 10px rgba(0, 0, 0, 0.55);
+  transition: background 0.15s, transform 0.1s;
+}
+.icon-btn:hover { background: linear-gradient(180deg, #6b241a, #3a120d); border-color: var(--gold2); }
+.icon-btn:active { transform: translateY(2px); }
+
+/* 3D Prompt Diamond - Bird Liang Style */
+#promptTag {
+  position: fixed;
+  z-index: 25;
+  transform: translate(-50%, -100%);
+  pointer-events: auto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.65));
+}
+.diamond {
+  width: 42px;
+  height: 42px;
+  background: radial-gradient(circle, #8f2a20, #2b0d08);
+  border: 2px solid var(--gold2);
+  transform: rotate(45deg);
+  z-index: 1;
+  box-shadow: 0 0 16px rgba(240, 215, 154, 0.7);
+  animation: pulseDia 1.4s infinite ease-in-out;
+}
+@keyframes pulseDia {
+  0%, 100% { transform: rotate(45deg) scale(1); }
+  50% { transform: rotate(45deg) scale(1.14); }
+}
+.prompt-lbl {
+  margin-left: -6px;
+  background: linear-gradient(90deg, rgba(20, 15, 10, 0.95), rgba(20, 15, 10, 0.82));
+  border-top: 1px solid var(--gold);
+  border-bottom: 1px solid var(--gold);
+  border-right: 1px solid var(--gold);
+  color: var(--paper);
+  padding: 7px 18px 7px 20px;
+  font-size: clamp(18px, 2.4vw, 22px);
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+/* Inspect Hotspots */
+.hotspot-marker {
+  position: fixed;
+  z-index: 24;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: pointer;
+  background: rgba(18, 13, 8, 0.92);
+  border: 1.5px solid var(--gold2);
+  color: var(--gold2);
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: clamp(16px, 2.2vw, 20px);
+  font-weight: bold;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  transition: transform 0.15s;
+}
+.hotspot-marker.done {
+  border-color: var(--jade);
+  color: #b8f2d0;
+}
+.hotspot-marker:hover { transform: translate(-50%, -50%) scale(1.08); }
+
+/* Touch Analog Pad */
+#pad {
+  position: fixed;
+  left: max(28px, env(safe-area-inset-left));
+  bottom: max(28px, env(safe-area-inset-bottom));
+  width: 136px;
+  height: 136px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(24, 19, 14, 0.35) 0 38%, rgba(24, 19, 14, 0.62) 39% 100%);
+  border: 2px solid rgba(214, 179, 106, 0.78);
+  box-shadow: 0 0 0 6px rgba(24, 19, 14, 0.25), inset 0 0 18px rgba(0, 0, 0, 0.5);
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  touch-action: none;
+}
+@media (pointer: coarse) {
+  #pad { display: flex; }
+}
+#padKnob {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f3dba0, #b8933e 70%, #7d611f);
+  border: 2px solid #fff3cf;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+/* Modal / Dialog / Quiz Panels - Ornate Lacquer & Gold Frame */
+.overlay-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: radial-gradient(ellipse at center, rgba(10, 8, 5, 0.38), rgba(10, 8, 5, 0.78));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 16px 16px;
+}
+#tut, #stagesModal {
+  z-index: 95;
+}
+.modal-card {
+  position: relative;
+  max-width: 920px;
+  width: 96%;
+  max-height: calc(var(--appH) - 80px);
+  overflow-y: auto;
+  background: linear-gradient(180deg, var(--lacquer2), var(--lacquer));
+  border: 1px solid var(--gold);
+  padding: 28px 30px;
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.55), inset 0 0 0 4px rgba(201, 164, 92, 0.28), 0 14px 44px rgba(0, 0, 0, 0.65);
+  color: var(--paper);
+}
+.modal-card::before, .modal-card::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--gold2);
+  pointer-events: none;
+}
+.modal-card::before { left: 5px; top: 5px; border-right: 0; border-bottom: 0; }
+.modal-card::after { right: 5px; bottom: 5px; border-left: 0; border-top: 0; }
+
+.para-badge {
+  display: inline-block;
+  background: var(--gold2);
+  border: 1px solid var(--gold);
+  color: #2b2118;
+  padding: 4px 14px;
+  font-size: clamp(16px, 2.2vw, 20px);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+.dialog-title {
+  font-family: var(--f-title);
+  font-size: clamp(26px, 4vw, 36px);
+  line-height: 1.3;
+  color: var(--gold2);
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+  font-weight: 900;
+}
+.dialog-text {
+  font-size: clamp(20px, 2.8vw, 24px);
+  line-height: 1.9;
+  color: var(--paper);
+  background: rgba(241, 230, 204, 0.06);
+  padding: 20px 24px;
+  border: 1px dashed rgba(201, 164, 92, 0.5);
+  border-left: 4px solid var(--gold2);
+  margin-bottom: 22px;
+  text-align: justify;
+}
+.dialog-text em {
+  font-style: normal;
+  color: var(--gold2);
+  background: rgba(201, 164, 92, 0.18);
+  padding: 0 4px;
+  font-weight: bold;
+  border-bottom: 2px solid var(--gold2);
+}
+
+/* Quiz Styles */
+.q-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.q-level {
+  background: linear-gradient(180deg, #8f2a20, #5e1812);
+  border: 1px solid var(--gold);
+  color: var(--paper);
+  padding: 4px 14px;
+  font-size: clamp(16px, 2.2vw, 20px);
+  font-weight: bold;
+  letter-spacing: 0.12em;
+}
+.q-stem {
+  font-size: clamp(22px, 3vw, 27px);
+  line-height: 1.6;
+  color: var(--paper);
+  margin-bottom: 18px;
+  font-weight: bold;
+}
+.opt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.opt-btn {
+  cursor: pointer;
+  text-align: left;
+  padding: 15px 20px;
+  background: linear-gradient(90deg, rgba(60, 46, 32, 0.92), rgba(30, 23, 16, 0.92));
+  border: 1px solid rgba(201, 164, 92, 0.55);
+  color: var(--paper);
+  font-size: clamp(19px, 2.6vw, 23px);
+  line-height: 1.55;
+  font-family: inherit;
+  font-weight: bold;
+  transition: all 0.15s;
+}
+.opt-btn:hover { border-color: var(--gold2); transform: translateX(4px); box-shadow: 0 0 14px rgba(240, 215, 154, 0.25); }
+.opt-btn.sel { background: linear-gradient(90deg, rgba(125, 92, 38, 0.95), rgba(68, 48, 22, 0.95)); border: 2px solid var(--gold2); color: #fff8e6; }
+
+.tile-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0 18px;
+}
+.tile-btn {
+  cursor: pointer;
+  padding: 12px 22px;
+  background: linear-gradient(180deg, #4a3826, #251b11);
+  border: 1px solid var(--gold);
+  color: var(--paper);
+  font-size: clamp(20px, 2.8vw, 24px);
+  font-family: inherit;
+  font-weight: bold;
+  box-shadow: 0 3px 0 #0c0805;
+}
+.tile-btn.sel { outline: 2px solid var(--gold2); outline-offset: 2px; background: linear-gradient(180deg, #8f2a20, #5e1812); color: #fff; }
+
+.match-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+@media (max-width: 640px) {
+  .match-grid { grid-template-columns: 1fr; }
+}
+.match-col { display: flex; flex-direction: column; gap: 10px; }
+.match-item {
+  cursor: pointer;
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed var(--gold);
+  color: var(--paper);
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: bold;
+  line-height: 1.5;
+  transition: background 0.15s, border-color 0.15s;
+}
+.match-item:hover { background: rgba(240, 215, 154, 0.1); }
+.match-item.sel { border: 2px solid var(--gold2); background: rgba(201, 164, 92, 0.25); color: #fff8e6; }
+
+.order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed var(--gold);
+  color: var(--paper);
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: bold;
+}
+.order-SideBtns button {
+  cursor: pointer;
+  padding: 6px 14px;
+  margin-left: 6px;
+  background: linear-gradient(180deg, #4a3826, #251b11);
+  border: 1px solid var(--gold);
+  color: var(--gold2);
+  font-size: 20px;
+  font-weight: bold;
+}
+
+#qHint {
+  background: rgba(143, 42, 32, 0.28);
+  border-left: 4px solid var(--red2);
+  color: #ffd9b0;
+  padding: 14px 18px;
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: bold;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+/* Stages Modal */
+.stage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.stage-item {
+  padding: 14px 16px;
+  background: linear-gradient(180deg, #4a3826, #251b11);
+  border: 1px solid var(--gold);
+  color: var(--paper);
+  cursor: pointer;
+  font-size: 20px;
+}
+.stage-item.locked {
+  filter: grayscale(1) brightness(0.48);
+  cursor: not-allowed;
+}
+.stage-item.current {
+  outline: 2px solid var(--red2);
+  background: linear-gradient(180deg, #5c3a24, #331e12);
+}
+
+/* Certificate Screen */
+#cert {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(8, 6, 4, 0.78);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+.cert-box {
+  max-width: 920px;
+  width: 96%;
+  background: linear-gradient(180deg, var(--lacquer2), var(--lacquer));
+  border: 1px solid var(--gold);
+  padding: 24px;
+  text-align: center;
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.55), inset 0 0 0 4px rgba(201, 164, 92, 0.28), 0 14px 44px rgba(0, 0, 0, 0.65);
+}
+#certImg {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--gold);
+  margin: 12px 0;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+/* Toast & Banner */
+#toast {
+  position: fixed;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 130;
+  background: linear-gradient(180deg, var(--lacquer2), var(--lacquer));
+  border: 1px solid var(--gold2);
+  color: var(--paper);
+  padding: 12px 26px;
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: bold;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+#toast.show { opacity: 1; }
+
+#banner {
+  position: fixed;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  background: linear-gradient(90deg, transparent, rgba(20, 15, 10, 0.88) 20%, rgba(20, 15, 10, 0.88) 80%, transparent);
+  border-top: 1px solid var(--gold2);
+  border-bottom: 1px solid var(--gold2);
+  padding: 18px 54px;
+  text-align: center;
+  color: var(--paper);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+#banner.show { opacity: 1; }
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="canvasWrap"><canvas id="webgl"></canvas></div>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="load-title">野菜，部落不可缺的味</div>
+  <div class="load-bar-wrap"><div id="loadBar"></div></div>
+  <div id="loadTxt">正在載入原鄉東部風景與題庫…</div>
+</div>
+
+<!-- Title -->
+<div id="title">
+  <div class="title-card">
+    <div class="title-badge">國小國語六上 · 閱讀階梯一 · 理解監控與五感體驗</div>
+    <h1 class="title-main">野菜，部落不可缺的味</h1>
+    <p class="title-sub">作者：楊依璇（選自《食在四方》）<br>走進原鄉東部街角、部落廚房與山林小徑，品味一葉菜裡的健康與鄉愁。</p>
+    <div class="title-btns">
+      <button id="tStart" class="g-btn">開始尋味之旅</button>
+      <button id="tCont" class="g-btn sec hide">繼續遊戲</button>
+      <button id="tStages" class="g-btn sec">關卡一覽</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tutorial Modal -->
+<div id="tut" class="overlay-modal hide">
+  <div class="modal-card">
+    <div class="para-badge">操作與學習說明</div>
+    <h2 class="dialog-title">歡迎來到《野菜，部落不可缺的味》3D 閱讀世界</h2>
+    <div class="dialog-text">
+      <p>1. <b>移動與視角</b>：電腦請使用 <b>WASD 或方向鍵</b> 移動、滑鼠拖曳轉動視角；手機／平板請使用左下角<b>圓形類比搖桿</b>移動、拖曳畫面轉動視角。</p>
+      <p>2. <b>理解監控策略</b>：每讀完一段課文原文，請一邊檢查自己是否讀懂，透過上下文推論字詞與文意。</p>
+      <p>3. <b>收集野菜葉</b>：答對閱讀挑戰可獲得「鮮綠野菜葉 🌿」，答錯會扣除體力並獲得課文線索提示。完成挑戰即可獲頒專屬通關證書！</p>
+    </div>
+    <div style="text-align:right;">
+      <button id="tutOk" class="g-btn">進入第 1 關原型體驗</button>
+    </div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hide">
+  <div class="hud-top-left">
+    <div class="stat-row">
+      <div class="hp-wrap">
+        <span>❤️ 體力</span>
+        <div class="hp-bar-bg"><div id="hpFill"></div></div>
+        <span id="hpVal">100</span>
+      </div>
+      <div class="leaf-badge">🌿 野菜葉：<span id="leafCount">0</span></div>
+    </div>
+    <div id="questBox">
+      <div id="questTitle">任務目標</div>
+      <div id="questObj">請走向目標地點</div>
+    </div>
+  </div>
+  <div class="hud-top-right">
+    <button id="btnHelp" class="icon-btn">說明</button>
+    <button id="btnStages" class="icon-btn">關卡</button>
+    <button id="btnSave" class="icon-btn">存檔</button>
+    <button id="btnMute" class="icon-btn">🔊 音效</button>
+  </div>
+</div>
+
+<!-- 3D Target Prompt Diamond -->
+<div id="promptTag" class="hide">
+  <div class="diamond"></div>
+  <div id="promptTxt" class="prompt-lbl">走上前</div>
+</div>
+
+<!-- Inspect Hotspots Container -->
+<div id="hotspotLayer"></div>
+
+<!-- Touch Joystick -->
+<div id="pad">
+  <div id="padKnob"></div>
+</div>
+
+<!-- Reading Dialog Modal -->
+<div id="dialog" class="overlay-modal hide">
+  <div class="modal-card">
+    <div id="dlgPara" class="para-badge">第一段</div>
+    <h2 id="dlgTitle" class="dialog-title">關卡標題</h2>
+    <div id="dlgText" class="dialog-text"></div>
+    <div id="dlgInspectNotice" class="hide" style="margin-bottom:16px;color:var(--gold2);background:rgba(240,215,154,0.08);padding:10px 16px;border:1px dashed rgba(201,164,92,0.55);font-size:20px;font-weight:bold;">
+      💡 讀完課文後，也可以點擊場景中的發光標記實地觀察赤道櫻草與人物喔！
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:12px;">
+      <button id="dlgBtn" class="g-btn">接受挑戰</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quiz Modal -->
+<div id="quiz" class="overlay-modal hide">
+  <div class="modal-card">
+    <div class="q-header">
+      <span id="qNo" class="para-badge">第 1 題</span>
+      <span id="qLevel" class="q-level">PIRLS：擷取訊息</span>
+    </div>
+    <div id="qStem" class="q-stem">題目內容</div>
+    <div id="qBody"></div>
+    <div id="qHint" class="hide"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;flex-wrap:wrap;gap:10px;">
+      <button id="qReread" class="g-btn sec" style="padding:10px 20px;font-size:20px;">📖 重讀本段課文</button>
+      <button id="qSubmit" class="g-btn">確認作答</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stages & Teacher Unlock Modal -->
+<div id="stagesModal" class="overlay-modal hide">
+  <div class="modal-card">
+    <div class="para-badge">全關卡導覽</div>
+    <h2 class="dialog-title">關卡一覽與進度</h2>
+    <div id="stageList" class="stage-grid"></div>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(201,164,92,0.4);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="teacherPw" type="password" placeholder="輸入教師密碼解鎖全關卡" style="padding:10px 14px;border:1px solid var(--gold);background:#0f0b07;color:var(--paper);font-size:20px;font-weight:bold;font-family:inherit;">
+        <button id="btnUnlockPw" class="g-btn sec" style="padding:10px 18px;font-size:20px;">解鎖</button>
+      </div>
+      <button id="stagesClose" class="g-btn">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Certificate Screen -->
+<div id="cert" class="hide">
+  <div class="cert-box">
+    <div class="para-badge">通關榮譽證書</div>
+    <h2 class="dialog-title">恭喜完成《野菜，部落不可缺的味》閱讀挑戰！</h2>
+    <div id="certNameInputWrap" style="margin:12px 0;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;font-size:22px;color:var(--paper);">
+      <label for="certStudentName" style="font-weight:bold;">請輸入姓名：</label>
+      <input id="certStudentName" type="text" value="尋味旅人" maxlength="16" style="padding:8px 14px;border:1px solid var(--gold);background:#0f0b07;color:var(--paper);font-size:22px;font-weight:bold;font-family:inherit;">
+      <button id="certGenBtn" class="g-btn sec" style="padding:8px 18px;font-size:20px;">更新證書姓名</button>
+    </div>
+    <img id="certImg" alt="通關證書">
+    <div style="display:flex;justify-content:center;gap:14px;margin-top:14px;flex-wrap:wrap;">
+      <button id="certDl" class="g-btn">下載證書 (.png)</button>
+      <button id="certStages" class="g-btn sec">自由選關重溫</button>
+      <button id="certHome" class="g-btn sec">回標題畫面</button>
+    </div>
+  </div>
+</div>
+
+<div id="banner"><div id="bannerSub" style="color:var(--gold2);font-size:19px;letter-spacing:0.35em;font-weight:bold;"></div><div id="bannerMain" style="font-family:var(--f-title);font-size:clamp(28px,4.8vw,44px);font-weight:900;margin-top:6px;color:var(--paper);letter-spacing:0.15em;text-shadow:0 2px 16px rgba(0,0,0,0.8);"></div></div>
+<div id="toast"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const TAU = Math.PI * 2;
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+
+/* =========================================================
+   0. 視窗高度與行動版 --appH 同步（避免 iPad/手機下方黑邊或捲動）
+   ========================================================= */
+function syncAppHeight() {
+  const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--appH', `${Math.round(h)}px`);
+}
+syncAppHeight();
+window.addEventListener('resize', syncAppHeight);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', syncAppHeight);
+
+/* =========================================================
+   1. 儲存鍵常數與稱號設定（供 cert_check.py / quality_check.py 驗證）
+   ========================================================= */
+const SAVE_KEY = 'bird-liang-v1';
+const CERT_KEY = 'bird-liang-certs';
+const GRADES = [
+  [0.9, '部落尋味傳承人'],
+  [0.7, '山林識菜饕客'],
+  [0.45, '原鄉採集行家'],
+  [0.0, '初識野味旅人']
+];
+
+/* =========================================================
+   2. 音效與配樂合成器（WebAudio 免外部大檔，支援 duck 與靜音）
+   ========================================================= */
+const AU = { ctx: null, muted: false };
+function ensureAudio() {
+  if (!AU.ctx) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (Ctx) AU.ctx = new Ctx();
+  }
+  if (AU.ctx && AU.ctx.state === 'suspended') AU.ctx.resume().catch(() => {});
+}
+const MUSIC = {
+  ducked: false,
+  cur: 'title',
+  vol() { return (AU.muted || this.ducked) ? 0 : 0.2; },
+  duck(on) { this.ducked = !!on; },
+  play(track) { this.cur = track; }
+};
+const SND = {
+  tone(freq = 520, dur = 0.14, type = 'sine', gain = 0.12) {
+    if (AU.muted) return;
+    try {
+      ensureAudio();
+      if (!AU.ctx) return;
+      const o = AU.ctx.createOscillator();
+      const g = AU.ctx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(gain, AU.ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, AU.ctx.currentTime + dur);
+      o.connect(g).connect(AU.ctx.destination);
+      o.start();
+      o.stop(AU.ctx.currentTime + dur);
+    } catch (e) {}
+  },
+  click() { this.tone(660, 0.08, 'triangle', 0.1); },
+  correct() { this.tone(587.33, 0.12, 'sine', 0.14); setTimeout(() => this.tone(880, 0.22, 'sine', 0.15), 110); },
+  wrong() { this.tone(220, 0.22, 'sawtooth', 0.12); },
+  boil() { this.tone(320, 0.18, 'sine', 0.09); }
+};
+
+/* =========================================================
+   3. 寫實程序化 GLSL 材質系統（參照〈鳥〉沉浸式閱讀遊戲）
+   ========================================================= */
+const canvas = document.getElementById('webgl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.82;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0xd8c7ab, 0.014);
+
+const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.05, 600);
+
+const NOISE = `
+float qh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float qn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
+ return mix(mix(qh(i),qh(i+vec2(1,0)),f.x),mix(qh(i+vec2(0,1)),qh(i+1.0),f.x),f.y);}
+float qfbm(vec2 p){return qn(p)*.5+qn(p*2.03)*.27+qn(p*4.1)*.15+qn(p*8.3)*.08;}
+`;
+function surface(name, glsl, params = {}) {
+  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0, ...params });
+  m.onBeforeCompile = s => {
+    s.vertexShader = 'varying vec3 vWP; varying vec3 vWN; varying vec2 vOUV;\n' + s.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      vec4 _wp=vec4(transformed,1.0); vec3 _wn=objectNormal;
+      #ifdef USE_INSTANCING
+        _wp=instanceMatrix*_wp; _wn=mat3(instanceMatrix)*_wn;
+      #endif
+      vWP=(modelMatrix*_wp).xyz; vWN=normalize(mat3(modelMatrix)*_wn); vOUV=uv;`);
+    s.fragmentShader = 'varying vec3 vWP; varying vec3 vWN; varying vec2 vOUV; float dH=0.0, dR=1.0;\n' + NOISE + s.fragmentShader
+      .replace('#include <map_fragment>', `#include <map_fragment>
+      { vec3 an=abs(vWN); vec2 wuv = an.y>max(an.x,an.z) ? vWP.xz : (an.x>an.z ? vWP.zy : vWP.xy);
+        vec2 ouv=vOUV; vec3 col=vec3(1.0); float rough=.9; float h=0.0;
+        ${glsl}
+        diffuseColor.rgb*=col; dR=rough; dH=h; }`)
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=clamp(dR,.05,1.0);')
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+      { vec3 qx=dFdx(-vViewPosition),qy=dFdy(-vViewPosition);
+        vec3 rx=cross(qy,normal),ry=cross(normal,qx); float det=dot(qx,rx);
+        vec3 grad=sign(det)*(dFdx(dH)*rx+dFdy(dH)*ry);
+        normal=normalize(abs(det)*normal-grad); }`);
+  };
+  m.customProgramCacheKey = () => 'surf-' + name;
+  return m;
+}
+
+const MAT = {
+  brick: surface('brick', `
+    vec2 b=wuv/vec2(.24,.066); b.x+=mod(floor(b.y),2.0)*.5;
+    vec2 f=fract(b), id=floor(b);
+    float e=smoothstep(0.,.05,f.x)*smoothstep(1.,.95,f.x)*smoothstep(0.,.13,f.y)*smoothstep(1.,.87,f.y);
+    col=mix(vec3(.46,.28,.22),vec3(.62,.38,.28),qh(id))*(.85+.3*qn(wuv*9.));
+    col*=mix(.68,1.08,qfbm(wuv*vec2(.7,.22)));
+    col=mix(vec3(.64,.60,.54)*(.9+.2*qn(wuv*30.)),col,e);
+    col*=mix(.55,1.,smoothstep(0.,1.2,vWP.y));
+    float chip=step(.86,qn(wuv*6.+qh(id)*9.));
+    col*=1.-chip*.25*e;
+    rough=.88; h=e*.006-chip*.004+qn(wuv*45.)*.001*e;`),
+  tile: surface('tile', `
+    float c=fract(ouv.y/.2), row=fract(ouv.x/.26); vec2 id=floor(vec2(ouv.y/.2,ouv.x/.26));
+    float tube=pow(max(sin(c*3.14159),0.),.55);
+    col=vec3(.24,.23,.22)*(.62+.45*tube)*(.82+.3*qh(id));
+    col*=mix(.5,1.,smoothstep(0.,.3,row));
+    float moss=smoothstep(.5,.78,qfbm(ouv*.6));
+    col=mix(col,vec3(.24,.29,.16),moss*.55*(1.-tube*.6));
+    rough=.62+.25*qn(ouv*20.)+moss*.2; h=tube*.035+smoothstep(.85,1.,row)*.012;`, { side: THREE.DoubleSide }),
+  ground: surface('ground', `
+    float road=1.-smoothstep(1.8,2.4,abs(vWP.x));
+    vec2 s=wuv/vec2(.55,.38); s.x+=mod(floor(s.y),2.)*.37;
+    vec2 f=fract(s), id=floor(s);
+    float e=smoothstep(0.,.06,f.x)*smoothstep(1.,.94,f.x)*smoothstep(0.,.08,f.y)*smoothstep(1.,.92,f.y);
+    vec3 stone=mix(vec3(.40,.39,.36),vec3(.55,.53,.48),qh(id))*(.82+.28*qn(wuv*14.));
+    stone=mix(vec3(.22,.20,.17),stone,e);
+    vec3 dirt=mix(vec3(.38,.34,.25),vec3(.52,.47,.36),qfbm(wuv*.9))*(.82+.3*qn(wuv*25.));
+    float peb=smoothstep(.78,.84,qn(wuv*17.));
+    dirt=mix(dirt,vec3(.62,.6,.55),peb*.7);
+    float paved=road*smoothstep(.25,.5,qfbm(wuv*.45+3.));
+    col=mix(dirt,stone,paved);
+    float wet=smoothstep(.62,.7,qfbm(wuv*.3+9.))*(1.-paved);
+    col*=1.-wet*.32;
+    rough=mix(mix(.95,.38,wet),.8,paved);
+    h=mix(peb*.006+qn(wuv*30.)*.002,e*.01,paved);`),
+  redwood: surface('redwood', `
+    float g=qn(vec2(wuv.x*30.,wuv.y*1.2))*.6+qn(vec2(wuv.x*90.,wuv.y*4.))*.4;
+    vec3 wood=mix(vec3(.26,.16,.09),vec3(.42,.28,.16),g);
+    vec3 paint=vec3(.46,.11,.07)*(.82+.25*g);
+    float wear=smoothstep(.6,.68,qfbm(wuv*2.2+vec2(0.,vWP.x)));
+    col=mix(paint,wood,wear);
+    rough=mix(.42,.85,wear); h=g*.0015-wear*.0015;`),
+  wood: surface('wood', `
+    float g=qn(vec2(wuv.x*2.,wuv.y*40.))*.6+qn(vec2(wuv.x*6.,wuv.y*120.))*.4;
+    col=mix(vec3(.30,.20,.12),vec3(.50,.36,.22),g); rough=.7; h=g*.002;`),
+  plaster: surface('plaster', `
+    col=vec3(.78,.75,.69)*mix(.68,1.05,qfbm(wuv*1.1))*(.9+.15*qn(wuv*30.));
+    rough=.92; h=qn(wuv*22.)*.003;`),
+  stone: surface('stone', `
+    col=vec3(.58,.57,.54)*mix(.7,1.05,qfbm(wuv*2.5))*(.88+.2*qn(wuv*40.));
+    rough=.85; h=qn(wuv*18.)*.006;`),
+  bark: surface('bark', `
+    float r=qn(vec2(wuv.x*14.,wuv.y*2.5))*.6+qn(wuv*30.)*.4;
+    col=mix(vec3(.15,.12,.09),vec3(.34,.28,.21),r);
+    rough=.95; h=r*.02;`),
+  lattice: surface('lattice', `
+    vec2 g=abs(fract(ouv/.11)-.5);
+    float bar=smoothstep(.40,.45,max(g.x,g.y));
+    vec3 paper=vec3(.88,.82,.68)*(.9+.12*qn(ouv*40.));
+    col=mix(paper,vec3(.24,.14,.08),bar);
+    rough=.9; h=bar*.005;`, { side: THREE.DoubleSide }),
+  grass: surface('grass', `
+    float n=qfbm(wuv*.35), d=smoothstep(.62,.72,qfbm(wuv*.8+5.));
+    col=mix(vec3(.22,.36,.14),vec3(.40,.52,.20),n)*(.8+.35*qn(wuv*22.));
+    col=mix(col,vec3(.44,.37,.27),d*.65);
+    rough=.95; h=qn(wuv*30.)*.004;`),
+  dirt: surface('dirt', `
+    col=mix(vec3(.42,.35,.26),vec3(.58,.50,.38),qfbm(wuv*.9))*(.82+.3*qn(wuv*25.));
+    float peb=smoothstep(.78,.84,qn(wuv*17.)); col=mix(col,vec3(.62,.6,.55),peb*.6);
+    rough=.95; h=peb*.006+qn(wuv*30.)*.002;`),
+  paddy: surface('paddy', `
+    float row=smoothstep(.25,.55,abs(fract(wuv.x/.28)-.5)*2.);
+    float tuft=smoothstep(.35,.7,qn(vec2(wuv.x*3.6,wuv.y*9.)))*(1.-row);
+    float tuft2=max(tuft,smoothstep(.45,.75,qfbm(wuv*.5))*.8);
+    vec3 water=mix(vec3(.16,.24,.20),vec3(.26,.34,.28),qfbm(wuv*.3));
+    vec3 rice=mix(vec3(.22,.48,.14),vec3(.44,.66,.22),qn(wuv*4.));
+    col=mix(water,rice,tuft2);
+    rough=mix(.22,.85,tuft2); h=tuft2*.012;`, { envMapIntensity: 0.45 }),
+  mud: surface('mud', `
+    col=mix(vec3(.26,.21,.15),vec3(.40,.33,.24),qfbm(wuv*1.4))*(.85+.25*qn(wuv*30.));
+    float g=smoothstep(.55,.7,qfbm(wuv*.7)); col=mix(col,vec3(.30,.42,.18),g*.6);
+    rough=.92; h=qn(wuv*20.)*.006;`),
+  cloth: (color, name) => surface('cloth-' + name, `
+    col=vec3(.86+.14*qn(wuv*220.))*(.94+.06*sin(wuv.y*500.))*mix(.8,1.05,qfbm(wuv*3.));
+    rough=.94; h=qn(wuv*260.)*.0004;`, { color })
+};
+const plain = (color, rough = 0.8, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, ...extra });
+
+/* 寫實大氣天空 Shader 與 PMREM 環境光貼圖 */
+const sunDir = new THREE.Vector3(-0.35, 0.22, -0.9).normalize();
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  depthWrite: false,
+  fog: false,
+  uniforms: {
+    sunDir: { value: sunDir },
+    hz: { value: new THREE.Vector3(0.93, 0.80, 0.62) },
+    zn: { value: new THREE.Vector3(0.47, 0.60, 0.74) },
+    sunCol: { value: new THREE.Color(1, 0.82, 0.6) },
+    stars: { value: 0 },
+    cloud: { value: 0.75 }
+  },
+  vertexShader: 'varying vec3 vD;void main(){vD=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);gl_Position.z=gl_Position.w;}',
+  fragmentShader: NOISE + `varying vec3 vD;uniform vec3 sunDir,hz,zn,sunCol;uniform float stars,cloud;
+  void main(){vec3 d=normalize(vD);float h=max(d.y,0.);
+    vec3 c=mix(hz,zn,pow(h,.5));
+    c=mix(c,hz*.88,smoothstep(.0,-.2,d.y));
+    vec2 p=d.xz/(.18+h)*2.2; float n=qfbm(p);
+    float cl=smoothstep(.5,.78,n)*smoothstep(.02,.2,h)*cloud;
+    float s=max(dot(d,sunDir),0.);
+    vec3 cloudCol=mix(hz*1.02+vec3(.03),sunCol,pow(s,6.)*.6);
+    c=mix(c,cloudCol,cl*.8);
+    c+=sunCol*(pow(s,8.)*.3+pow(s,120.)*.5);
+    c+=sunCol*3.*smoothstep(.9993,.9997,s);
+    if(stars>0.){ vec2 sp=floor(vec2(atan(d.z,d.x)*160.,asin(clamp(d.y,-1.,1.))*160.));
+      c+=vec3(step(.9965,qh(sp))*smoothstep(.05,.3,h)*(1.-cl)*stars*.9); }
+    gl_FragColor=vec4(c,1.);}`
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 16), skyMat);
+scene.add(sky);
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envScene = new THREE.Scene();
+envScene.add(new THREE.Mesh(sky.geometry, skyMat));
+function refreshEnvMap() {
+  const old = scene.environment;
+  scene.environment = pmrem.fromScene(envScene, 0.04).texture;
+  old?.dispose();
+}
+
+const hemiLight = new THREE.HemisphereLight(0xd9e4f0, 0x6e5a42, 0.58);
+scene.add(hemiLight);
+
+const sunLight = new THREE.DirectionalLight(0xffd9a8, 3.0);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.bias = -0.0002;
+sunLight.shadow.normalBias = 0.04;
+Object.assign(sunLight.shadow.camera, { left: -28, right: 28, top: 28, bottom: -28, near: 1, far: 140 });
+scene.add(sunLight, sunLight.target);
+
+/* 後製 Bloom 光暈管線 */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.28, 0.55, 0.88);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+/* 8 組光影預設 ENV（對齊〈鳥〉寫實大氣與光影） */
+const ENV = {
+  hutong:      { hz: [0.93, 0.80, 0.62], zn: [0.47, 0.60, 0.74], sunC: 0xffd9a8, sunI: 3.0, sunD: [-0.35, 0.28, -0.88], hemiS: 0xd9e4f0, hemiG: 0x6e5a42, hemiI: 0.60, fog: 0xd8c7ab, fogD: 0.012, exp: 0.84, stars: 0, cloud: 0.72, lamp: 0 },
+  dawn:        { hz: [0.98, 0.76, 0.64], zn: [0.50, 0.62, 0.82], sunC: 0xffc89a, sunI: 2.5, sunD: [0.45, 0.22, -0.85],  hemiS: 0xe0e6f2, hemiG: 0x5a5040, hemiI: 0.70, fog: 0xe6cfbc, fogD: 0.014, exp: 0.85, stars: 0, cloud: 0.60, lamp: 0.35 },
+  noon:        { hz: [0.86, 0.89, 0.88], zn: [0.34, 0.55, 0.84], sunC: 0xfff2dc, sunI: 3.3, sunD: [0.15, 0.82, -0.45],  hemiS: 0xe8f0ff, hemiG: 0x6a6048, hemiI: 0.75, fog: 0xd6dcd8, fogD: 0.008, exp: 0.82, stars: 0, cloud: 0.50, lamp: 0.3 },
+  night:       { hz: [0.09, 0.12, 0.22], zn: [0.015, 0.025, 0.07], sunC: 0x9fb4ff, sunI: 0.45, sunD: [-0.35, 0.45, -0.8], hemiS: 0x34405c, hemiG: 0x161410, hemiI: 0.45, fog: 0x0d1220, fogD: 0.020, exp: 1.00, stars: 1, cloud: 0.20, lamp: 2.2 },
+  field:       { hz: [0.88, 0.90, 0.86], zn: [0.40, 0.60, 0.86], sunC: 0xfff0d0, sunI: 3.2, sunD: [-0.45, 0.60, -0.5],  hemiS: 0xe0ecff, hemiG: 0x56603c, hemiI: 0.68, fog: 0xcfd8d4, fogD: 0.006, exp: 0.84, stars: 0, cloud: 0.55, lamp: 0 },
+  winterDawn:  { hz: [0.82, 0.85, 0.86], zn: [0.52, 0.62, 0.72], sunC: 0xe8f0f8, sunI: 1.9, sunD: [0.50, 0.28, -0.7],   hemiS: 0xdde4ee, hemiG: 0x6a7868, hemiI: 0.88, fog: 0xcfd8d9, fogD: 0.018, exp: 0.88, stars: 0, cloud: 0.85, lamp: 0.4 },
+  winterDusk:  { hz: [0.88, 0.60, 0.44], zn: [0.30, 0.32, 0.46], sunC: 0xffa070, sunI: 1.9, sunD: [-0.75, 0.18, -0.6],  hemiS: 0xb0a8c0, hemiG: 0x50463e, hemiI: 0.65, fog: 0x9a8278, fogD: 0.018, exp: 0.95, stars: 0.2, cloud: 0.70, lamp: 1.4 },
+  winterNight: { hz: [0.08, 0.10, 0.16], zn: [0.02, 0.02, 0.06], sunC: 0xa8bcff, sunI: 0.4, sunD: [0.30, 0.55, -0.6],   hemiS: 0x2c3448, hemiG: 0x101014, hemiI: 0.45, fog: 0x10141e, fogD: 0.024, exp: 1.05, stars: 1, cloud: 0.30, lamp: 2.0 }
+};
+const lamps = [];
+
+function setEnv(name = 'hutong') {
+  const e = ENV[name] || ENV.hutong;
+  const U = skyMat.uniforms;
+  U.hz.value.set(...e.hz);
+  U.zn.value.set(...e.zn);
+  sunDir.set(...e.sunD).normalize();
+  U.sunCol.value.set(e.sunC);
+  U.stars.value = e.stars;
+  U.cloud.value = e.cloud;
+  sunLight.color.set(e.sunC);
+  sunLight.intensity = e.sunI;
+  sunLight.position.copy(sunDir).multiplyScalar(36);
+  hemiLight.color.set(e.hemiS);
+  hemiLight.groundColor.set(e.hemiG);
+  hemiLight.intensity = e.hemiI;
+  scene.fog.color.set(e.fog);
+  scene.fog.density = e.fogD;
+  renderer.toneMappingExposure = e.exp;
+  for (const l of lamps) {
+    l.light.intensity = l.base * e.lamp;
+    if (l.mesh) l.mesh.material.emissiveIntensity = l.emis * Math.max(0.25, Math.min(1.2, e.lamp));
+  }
+  refreshEnvMap();
+}
+
+/* =========================================================
+   4. 寫實建築、樹木、山巒、草叢與人物輔助建模函式
+   ========================================================= */
+const W  = { group: new THREE.Group(), area: { x0: -18, x1: 18, z0: -18, z1: 18, block: [] } };
+const R  = { group: new THREE.Group(), area: { x0: -16, x1: 16, z0: -16, z1: 16, block: [] }, steam: [] };
+const F  = { group: new THREE.Group(), area: { x0: -22, x1: 22, z0: -22, z1: 22, block: [] } };
+const WN = { group: new THREE.Group(), area: { x0: -18, x1: 18, z0: -18, z1: 18, block: [] } };
+scene.add(W.group, R.group, F.group, WN.group);
+
+function add(mesh, parent = scene, cast = true, recv = true) {
+  mesh.castShadow = cast;
+  mesh.receiveShadow = recv;
+  parent.add(mesh);
+  return mesh;
+}
+function box(w, h, d, mat, x, y, z, parent) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  return add(m, parent);
+}
+function scaleUV(geo, sx, sy) {
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * sx, uv.getY(i) * sy);
+  return geo;
+}
+function gableRoof(L, Wd, H, { over = 0.35, ridge = true, ends = true, mat = MAT.tile } = {}) {
+  const g = new THREE.Group(), half = Wd / 2, slope = Math.hypot(half, H) + over, a = Math.atan2(H, half);
+  for (const side of [-1, 1]) {
+    const geo = scaleUV(new THREE.PlaneGeometry(slope, L + over * 2), slope, L + over * 2);
+    geo.rotateX(-Math.PI / 2);
+    const m = new THREE.Mesh(geo, mat);
+    m.rotation.z = -side * a;
+    m.position.set(side * Math.cos(a) * slope / 2, H - Math.sin(a) * slope / 2, 0);
+    add(m, g);
+  }
+  if (ridge) {
+    box(0.16, 0.16, L + over * 2, plain(0x2b2c2d, 0.7), 0, H + 0.04, 0, g);
+    if (ends) {
+      for (const s of [-1, 1]) {
+        const k = box(0.14, 0.34, 0.22, plain(0x2b2c2d, 0.7), 0, H + 0.18, s * (L / 2 + over - 0.05), g);
+        k.rotation.x = s * 0.35;
+      }
+    }
+  }
+  return g;
+}
+function cylinderBetween(a, b, r1, r2, seg = 8) {
+  const len = a.distanceTo(b), geo = new THREE.CylinderGeometry(r2, r1, len, seg, 1);
+  geo.translate(0, len / 2, 0);
+  geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()));
+  geo.translate(a.x, a.y, a.z);
+  return geo;
+}
+function mergeGeos(list) {
+  let total = 0;
+  list.forEach((g, i) => { if (g.index) list[i] = g = g.toNonIndexed(); total += g.attributes.position.count; });
+  const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), uv = new Float32Array(total * 2);
+  let o = 0;
+  for (const g of list) {
+    pos.set(g.attributes.position.array, o * 3);
+    nor.set(g.attributes.normal.array, o * 3);
+    uv.set(g.attributes.uv.array, o * 2);
+    o += g.attributes.position.count;
+  }
+  const m = new THREE.BufferGeometry();
+  m.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  m.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  m.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return m;
+}
+function leafTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d');
+  for (let i = 0; i < 42; i++) {
+    const px = rand(30, 226), py = rand(30, 226), r = rand(10, 22);
+    x.save(); x.translate(px, py); x.rotate(rand(0, TAU));
+    x.fillStyle = `hsl(${rand(78, 108)},${rand(32, 52)}%,${rand(20, 42)}%)`;
+    x.beginPath(); x.ellipse(0, 0, r, r * 0.45, 0, 0, TAU); x.fill();
+    x.strokeStyle = 'rgba(20,30,10,.35)'; x.lineWidth = 1.2;
+    x.beginPath(); x.moveTo(-r, 0); x.lineTo(r, 0); x.stroke();
+    x.restore();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+const leafTex = leafTexture();
+
+function leafCards(mats, tex, hue = [0.22, 0.3], size = 1.1) {
+  const L = new THREE.InstancedMesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.75 }),
+    mats.length
+  );
+  const col = new THREE.Color();
+  mats.forEach((m, i) => {
+    L.setMatrixAt(i, m);
+    L.setColorAt(i, col.setHSL(rand(hue[0], hue[1]), rand(0.28, 0.48), rand(0.52, 0.82)));
+  });
+  L.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tex, alphaTest: 0.45 });
+  return L;
+}
+function forest(parent, specs, { leaves = true, depth = 3, hue = [0.21, 0.29], leafN = 28, spread = 1.15 } = {}) {
+  const bg = [], lm = [], tipsAll = [];
+  for (const [x, z, s] of specs) {
+    const tips = [];
+    (function grow(p, dir, len, r, d) {
+      const end = p.clone().addScaledVector(dir, len).add(V3(rand(-0.15, 0.15), 0, rand(-0.15, 0.15)).multiplyScalar(len));
+      bg.push(cylinderBetween(p, end, r, r * 0.68, 6));
+      if (d === 0) { tips.push(end); return; }
+      const n = d === depth ? 3 : rand(2, 3.99) | 0;
+      for (let i = 0; i < n; i++) {
+        grow(end, dir.clone().add(V3(rand(-0.9, 0.9), rand(0.1, 0.6), rand(-0.9, 0.9))).normalize(), len * rand(0.62, 0.78), r * 0.66, d - 1);
+      }
+    })(V3(x, 0, z), V3(rand(-0.05, 0.05), 1, rand(-0.05, 0.05)).normalize(), 2.6 * s, 0.22 * s, depth);
+    tipsAll.push(tips);
+    if (leaves) {
+      for (const t of tips) {
+        for (let i = 0; i < leafN; i++) {
+          const p = t.clone().add(V3(rand(-1, 1), rand(-0.6, 0.9), rand(-1, 1)).multiplyScalar(spread * s));
+          lm.push(new THREE.Matrix4().compose(p, new THREE.Quaternion().setFromEuler(new THREE.Euler(rand(0, TAU), rand(0, TAU), rand(0, TAU))), new THREE.Vector3().setScalar(rand(0.7, 1.25) * s)));
+        }
+      }
+    }
+  }
+  if (bg.length) add(new THREE.Mesh(mergeGeos(bg), MAT.bark), parent);
+  if (lm.length) add(leafCards(lm, leafTex, hue), parent);
+  return tipsAll;
+}
+function vnoise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const h = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  return (h(xi, yi) * (1 - u) + h(xi + 1, yi) * u) * (1 - v) + (h(xi, yi + 1) * (1 - u) + h(xi + 1, yi + 1) * u) * v;
+}
+function ridged(x, y) {
+  let s = 0, a = 0.5, f = 1;
+  for (let i = 0; i < 5; i++) { s += a * (1 - Math.abs(vnoise(x * f, y * f) * 2 - 1)); a *= 0.5; f *= 2.03; }
+  return s;
+}
+function hills(parent, list, color) {
+  const base = new THREE.Color(color), c = new THREE.Color();
+  for (const [x, z, r, h] of list) {
+    const geo = new THREE.PlaneGeometry(r * 2.8, r * 2.0, 80, 60);
+    geo.rotateX(-Math.PI / 2);
+    const pa = geo.attributes.position, col = new Float32Array(pa.count * 3), seed = rand(0, 90);
+    for (let i = 0; i < pa.count; i++) {
+      const px = pa.getX(i), pz = pa.getZ(i), d = Math.hypot(px / (r * 1.4), pz / r), env = Math.max(0, 1 - d);
+      const n = ridged(px / r * 1.8 + seed, pz / r * 1.8 + seed * 0.7);
+      const y = env > 0 ? h * Math.pow(env, 1.15) * (0.35 + 0.9 * n * n) : 0;
+      pa.setY(i, y - 1.5);
+      c.copy(base).multiplyScalar(0.7 + 0.55 * Math.min(1, y / h) + 0.12 * (n - 0.5));
+      col.set([c.r, c.g, c.b], i * 3);
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }));
+    m.position.set(x, 0, z);
+    m.rotation.y = rand(-0.3, 0.3);
+    add(m, parent, false, false);
+  }
+}
+function tuftTexture(h0 = 65, h1 = 105) {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+  const x = c.getContext('2d');
+  for (let i = 0; i < 42; i++) {
+    x.strokeStyle = `hsl(${rand(h0, h1)},${rand(30, 52)}%,${rand(22, 42)}%)`;
+    x.lineWidth = rand(1.6, 3.2);
+    const bx = rand(20, 108);
+    x.beginPath(); x.moveTo(bx, 128);
+    x.quadraticCurveTo(bx + rand(-12, 12), rand(60, 90), bx + rand(-25, 25), rand(10, 60));
+    x.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const grassTuftTex = tuftTexture(72, 110);
+function tufts(parent, n, posFn, tex = grassTuftTex) {
+  const geo = new THREE.PlaneGeometry(0.55, 0.45);
+  geo.translate(0, 0.22, 0);
+  const im = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.9 }), n);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion();
+  for (let i = 0; i < n; i++) {
+    q.setFromEuler(new THREE.Euler(0, rand(0, TAU), 0));
+    m.compose(posFn(i), q, new THREE.Vector3().setScalar(rand(0.65, 1.45)));
+    im.setMatrixAt(i, m);
+  }
+  add(im, parent, false, true);
+}
+function lantern(parent, x, y, z, base = 1.5) {
+  const pts = [];
+  for (let i = 0; i <= 12; i++) {
+    const t = i / 12;
+    pts.push(new THREE.Vector2(Math.sin(t * Math.PI) * 0.2 + 0.02, t * 0.42));
+  }
+  const lan = new THREE.Mesh(
+    new THREE.LatheGeometry(pts, 24),
+    new THREE.MeshStandardMaterial({ color: 0xb02a18, emissive: 0xff4a22, emissiveIntensity: 1.4, roughness: 0.6 })
+  );
+  lan.position.set(x, y, z);
+  add(lan, parent, false);
+  box(0.02, 0.28, 0.02, plain(0x222222), x, y + 0.54, z, parent);
+  box(0.06, 0.1, 0.06, plain(0xd8b04a, 0.4), x, y - 0.04, z, parent);
+  const l = new THREE.PointLight(0xff8a50, base, 8, 1.7);
+  l.position.set(x, y + 0.2, z);
+  parent.add(l);
+  lamps.push({ light: l, base, mesh: lan, emis: 2.0 });
+  return lan;
+}
+
+/* 建立寫實人物模型（參照〈鳥〉Keeper 的 LatheGeometry 布料衣袍、五官、斗笠／髮髻） */
+function createRealisticPerson({ x = 0, z = 0, rotY = 0, gownColor = 0x3b4a54, jacketColor = 0x5c3a2e, bunHair = false, strawHat = false, crouch = false }) {
+  const p = new THREE.Group();
+  p.position.set(x, crouch ? -0.38 : 0, z);
+  p.rotation.y = rotY;
+
+  const skin = plain(0xc9a07c, 0.6);
+  const gownMat = MAT.cloth(gownColor, 'g' + gownColor);
+  const jacketMat = MAT.cloth(jacketColor, 'j' + jacketColor);
+  const trouserMat = MAT.cloth(0x2a2826, 'trouser');
+
+  // 下半身與衣擺
+  add(new THREE.Mesh(new THREE.LatheGeometry([[0, 0.18], [0.28, 0.2], [0.28, 0.45], [0.25, 0.9], [0.22, 1.22], [0.19, 1.4], [0.08, 1.47]].map(([r, y]) => new THREE.Vector2(r, y)), 28), gownMat), p);
+  add(new THREE.Mesh(new THREE.LatheGeometry([[0.24, 0.92], [0.24, 1.0], [0.22, 1.25], [0.19, 1.42], [0.09, 1.48]].map(([r, y]) => new THREE.Vector2(r, y)), 28), jacketMat), p);
+
+  for (const s of [-1, 1]) {
+    box(0.11, 0.2, 0.12, trouserMat, s * 0.1, 0.1, 0, p);
+    box(0.12, 0.07, 0.25, MAT.cloth(0x181614, 'shoe'), s * 0.1, 0.035, 0.04, p);
+  }
+  // 頸部與頭部
+  add(new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.068, 0.1, 14), skin), p).position.y = 1.52;
+  const head = add(new THREE.Mesh(new THREE.SphereGeometry(0.128, 28, 22), skin), p);
+  head.position.y = 1.66;
+  head.scale.set(0.92, 1.08, 1);
+
+  for (const s of [-1, 1]) {
+    const ear = add(new THREE.Mesh(new THREE.SphereGeometry(0.028, 10, 8), skin), p);
+    ear.position.set(s * 0.118, 1.66, 0);
+    ear.scale.set(0.5, 1, 0.8);
+    const eye = add(new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 6), plain(0x111111, 0.3)), p);
+    eye.position.set(s * 0.044, 1.685, 0.112);
+  }
+  const nose = add(new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.048, 10), skin), p);
+  nose.rotation.x = Math.PI / 2;
+  nose.position.set(0, 1.65, 0.13);
+
+  // 髮髻或竹編斗笠
+  const hairMat = MAT.cloth(bunHair ? 0x585450 : 0x1e1916, 'hair' + (bunHair ? '1' : '0'));
+  const cap = add(new THREE.Mesh(new THREE.SphereGeometry(0.134, 24, 14, 0, TAU, 0, Math.PI / 1.9), hairMat), p);
+  cap.position.y = 1.67;
+  if (bunHair) {
+    const bun = add(new THREE.Mesh(new THREE.SphereGeometry(0.065, 14, 12), hairMat), p);
+    bun.position.set(0, 1.72, -0.11);
+  }
+  if (strawHat) {
+    const hat = add(new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.14, 24), MAT.wood), p);
+    hat.position.set(0, 1.81, 0);
+  }
+
+  // 雙臂
+  for (const s of [-1, 1]) {
+    const arm = new THREE.Group();
+    arm.position.set(s * 0.24, 1.36, 0);
+    arm.rotation.x = crouch ? -0.65 : -0.25;
+    arm.rotation.z = -s * 0.12;
+    p.add(arm);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.075, 0.48, 12), jacketMat), arm).position.y = -0.22;
+    add(new THREE.Mesh(new THREE.SphereGeometry(0.042, 10, 8), skin), arm).position.y = -0.47;
+  }
+  return p;
+}
+
+function buildWorlds() {
+  /* --- 第一幕 W：原鄉東部市區街角、國小紅磚廊道、屋宇旁水田與赤道櫻草叢 --- */
+  const gW = W.group;
+  const groundW = new THREE.Mesh(new THREE.PlaneGeometry(90, 90).rotateX(-Math.PI / 2), MAT.ground);
+  add(groundW, gW, false, true);
+
+  // 遠方寫實花東縱谷山巒
+  hills(gW, [[-38, -75, 42, 24], [25, -85, 50, 28], [75, -65, 45, 25], [-75, -90, 58, 32]], 0x3b5846);
+
+  // 國小紅磚廊道圍牆與瓦頂、木格窗
+  box(0.55, 3.0, 24, MAT.brick, -5.8, 1.5, -2, gW);
+  box(0.65, 0.24, 24.2, MAT.stone, -5.8, 0.12, -2, gW);
+  const schoolCap = gableRoof(24.2, 0.9, 0.32, { over: 0.12, ends: false });
+  schoolCap.position.set(-5.8, 3.0, -2);
+  gW.add(schoolCap);
+  for (let z = -10; z <= 6; z += 4) {
+    box(0.32, 3.1, 0.32, MAT.redwood, -5.45, 1.55, z, gW);
+    const w = new THREE.Mesh(scaleUV(new THREE.PlaneGeometry(1.5, 1.1), 1.5, 1.1), MAT.lattice);
+    w.position.set(-5.51, 1.85, z + 2);
+    w.rotation.y = Math.PI / 2;
+    add(w, gW);
+  }
+
+  // 轉角屋宇樓與旁邊幾畝水田（MAT.paddy）
+  const houseG = new THREE.Group();
+  houseG.position.set(8.2, 0, -9.8);
+  gW.add(houseG);
+  box(5.6, 3.1, 4.8, MAT.plaster, 0, 1.55, 0, houseG);
+  box(5.7, 0.28, 4.9, MAT.stone, 0, 0.14, 0, houseG);
+  const hRoof = gableRoof(4.8, 5.8, 1.5, { over: 0.42 });
+  hRoof.rotation.y = Math.PI / 2;
+  hRoof.position.y = 3.1;
+  houseG.add(hRoof);
+  box(1.1, 2.1, 0.1, MAT.redwood, 0, 1.05, 2.42, houseG);
+
+  // 屋宇旁幾畝稻田
+  for (let i = 0; i < 3; i++) {
+    const px = 6.8 + i * 3.2;
+    const padMesh = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.3, 14), [MAT.mud, MAT.mud, MAT.paddy, MAT.mud, MAT.mud, MAT.mud]);
+    padMesh.position.set(px, -0.08, -0.5);
+    add(padMesh, gW, false, true);
+    box(0.26, 0.12, 14, MAT.mud, px - 1.5, 0.08, -0.5, gW);
+  }
+
+  // 國小廊道外沿街狂放生長的赤道櫻草（日本龍葵）寫實綠植叢
+  tufts(gW, 220, () => V3(rand(-5.3, -3.9), 0, rand(-9.5, 4.5)));
+  const nightshadeMats = [];
+  for (let i = 0; i < 160; i++) {
+    const p = V3(rand(-5.25, -4.15), rand(0.18, 0.62), rand(-8.2, 1.5));
+    nightshadeMats.push(new THREE.Matrix4().compose(
+      p,
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(rand(0, TAU), rand(0, TAU), rand(0, TAU))),
+      new THREE.Vector3().setScalar(rand(0.42, 0.72))
+    ));
+  }
+  add(leafCards(nightshadeMats, leafTex, [0.24, 0.33], 0.85), gW);
+
+  // 街道綠樹
+  forest(gW, [[-7.5, -12, 1.15], [-7.2, 5, 1.05], [5.8, -14, 1.2], [6.5, 7, 1.1]]);
+
+  // 社區婆婆與帶著大剪和提袋蹲在街邊的饕客
+  const npcPoPo = createRealisticPerson({ x: -3.7, z: -4.5, rotY: 0.45, gownColor: 0x4e3b4f, jacketColor: 0x6b4c5e, bunHair: true });
+  const npcGourmet = createRealisticPerson({ x: -4.3, z: -3.1, rotY: 0.65, gownColor: 0x354a54, jacketColor: 0x476268, strawHat: true, crouch: true });
+  gW.add(npcPoPo, npcGourmet);
+
+  // 饕客的提袋與大剪
+  const bag = add(new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.34, 18), MAT.cloth(0x9c7a44, 'bag')), gW);
+  bag.position.set(-4.05, 0.17, -2.55);
+  const scissor1 = box(0.32, 0.02, 0.04, plain(0x9ea7ad, 0.3, { metalness: 0.85 }), -4.35, 0.08, -2.85, gW);
+  scissor1.rotation.y = 0.4;
+
+  // 第 2 關：都市部落友人與夜色街燈
+  const cityFriend = createRealisticPerson({ x: 4.2, z: -6.5, rotY: -0.45, gownColor: 0x2c3545, jacketColor: 0x3d4b63 });
+  gW.add(cityFriend);
+  box(0.14, 3.8, 0.14, MAT.bark, 4.9, 1.9, -6.2, gW);
+  box(0.8, 0.08, 0.08, MAT.bark, 4.55, 3.7, -6.2, gW);
+  lantern(gW, 4.25, 3.2, -6.2, 1.8);
+
+  /* --- 第二幕 R：部落傳統廚房、柴火磚灶與「啵囉啵囉」熬煮野菜稀飯大鍋 --- */
+  const gR = R.group;
+  add(new THREE.Mesh(new THREE.PlaneGeometry(18, 18).rotateX(-Math.PI / 2), MAT.wood), gR, false, true);
+  box(14, 3.8, 0.3, MAT.plaster, 0, 1.9, -7.8, gR);
+  box(0.3, 3.8, 14, MAT.plaster, -6.8, 1.9, -1, gR);
+  box(0.3, 3.8, 14, MAT.plaster, 6.8, 1.9, -1, gR);
+  for (let x = -5; x <= 5; x += 2.5) box(0.18, 0.22, 14, MAT.wood, x, 3.65, -1, gR);
+
+  // 廚房木格窗與暖燈
+  for (const sx of [-3.2, 3.2]) {
+    const w = new THREE.Mesh(scaleUV(new THREE.PlaneGeometry(1.8, 1.2), 1.8, 1.2), MAT.lattice);
+    w.position.set(sx, 2.1, -7.62);
+    add(w, gR);
+    box(1.96, 0.08, 0.1, MAT.redwood, sx, 2.72, -7.6, gR);
+    box(1.96, 0.08, 0.1, MAT.redwood, sx, 1.48, -7.6, gR);
+  }
+  lantern(gR, -2.5, 2.85, -5.2, 1.6);
+  lantern(gR, 2.5, 2.85, -5.2, 1.6);
+
+  // 紅磚大灶與鐵鍋、半透明草綠野菜糜
+  box(2.8, 1.05, 1.9, MAT.brick, 0, 0.525, -5.5, gR);
+  box(2.92, 0.1, 2.02, MAT.stone, 0, 1.08, -5.5, gR);
+  const ironPot = add(new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.58, 0.55, 28), plain(0x222528, 0.45, { metalness: 0.65 })), gR);
+  ironPot.position.set(0, 1.32, -5.5);
+  const porridge = add(new THREE.Mesh(new THREE.CylinderGeometry(0.73, 0.73, 0.06, 28), plain(0x5d8c4a, 0.25)), gR);
+  porridge.position.set(0, 1.58, -5.5);
+
+  // 灶火紅光與小魚乾竹篩、龍葵竹籃
+  const fireLight = new THREE.PointLight(0xff6a22, 2.2, 5, 1.5);
+  fireLight.position.set(0, 0.35, -4.4);
+  gR.add(fireLight);
+  box(0.6, 0.35, 0.08, plain(0xff5511, 0.5, { emissive: 0xff4400, emissiveIntensity: 1.5 }), 0, 0.28, -4.53, gR);
+
+  const basket = add(new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.34, 0.22, 20), MAT.wood), gR);
+  basket.position.set(1.05, 1.22, -5.4);
+  const elder = createRealisticPerson({ x: -1.55, z: -5.2, rotY: 0.42, gownColor: 0x523a28, jacketColor: 0x6e4730, bunHair: true });
+  gR.add(elder);
+
+  /* --- 第三幕 F：原鄉陽光田地小徑、梯田與山林護木野炊營地 --- */
+  const gF = F.group;
+  add(new THREE.Mesh(new THREE.PlaneGeometry(110, 140).rotateX(-Math.PI / 2), MAT.grass), gF, false, true);
+  const pathF = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 50).rotateX(-Math.PI / 2), MAT.dirt);
+  pathF.position.set(0, 0.01, -4);
+  add(pathF, gF, false, true);
+
+  // 右側層層水梯田（MAT.paddy）與遠山
+  for (let i = 0; i < 6; i++) {
+    const x0 = 3.2 + i * 3.4, top = -0.15 - i * 0.4;
+    const t = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3, 70), [MAT.mud, MAT.mud, MAT.paddy, MAT.mud, MAT.mud, MAT.mud]);
+    t.position.set(x0 + 1.7, top - 1.5, -10);
+    add(t, gF, false, true);
+    box(0.3, 0.14, 70, MAT.mud, x0 + 3.25, top + 0.05, -10, gF);
+  }
+  hills(gF, [[65, -95, 55, 38], [-55, -105, 58, 42], [10, -125, 70, 48]], 0x2c4a48);
+  forest(gF, [[-4.8, 4, 1.25], [-6.5, -2, 1.4], [-5.2, -9, 1.35], [-8.5, -6, 1.5], [-11, 2, 1.4], [3.8, -14, 1.25], [-4.2, -15, 1.45]]);
+  tufts(gF, 280, () => V3(rand(-12, 2.5), 0, rand(-16, 10)));
+
+  // 山林野炊營地：石塊圍爐、熱騰騰泡麵鍋、鳳尾蕨與過貓、護木鄰居
+  for (let a = 0; a < 8; a++) {
+    const ang = (a / 8) * TAU;
+    const stn = add(new THREE.Mesh(new THREE.DodecahedronGeometry(0.18, 1), MAT.stone), gF);
+    stn.position.set(Math.cos(ang) * 0.52, 0.12, -6.5 + Math.sin(ang) * 0.52);
+  }
+  const campPot = add(new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.36, 0.38, 22), plain(0xb88a3c, 0.35, { metalness: 0.75 })), gF);
+  campPot.position.set(0, 0.42, -6.5);
+  const soupTop = add(new THREE.Mesh(new THREE.CylinderGeometry(0.39, 0.39, 0.04, 22), plain(0x689f38, 0.3)), gF);
+  soupTop.position.set(0, 0.60, -6.5);
+
+  const neighbor = createRealisticPerson({ x: 1.35, z: -6.3, rotY: -0.45, gownColor: 0x2f4f38, jacketColor: 0x3e6142, strawHat: true });
+  gF.add(neighbor);
+
+  /* --- 第四幕 WN：歲末部落年祭紅燈籠、老家院落與媽媽的野菜稀飯團圓桌 --- */
+  const gWN = WN.group;
+  add(new THREE.Mesh(new THREE.PlaneGeometry(100, 100).rotateX(-Math.PI / 2), MAT.ground), gWN, false, true);
+  for (const s of [-1, 1]) {
+    box(0.42, 2.6, 16, MAT.brick, s * 6.5, 1.3, -1, gWN);
+    const wCap = gableRoof(16.2, 0.65, 0.22, { over: 0.08, ends: false });
+    wCap.position.set(s * 6.5, 2.6, -1);
+    gWN.add(wCap);
+  }
+  // 部落老家屋宇
+  box(12, 3.2, 5, MAT.brick, 0, 1.6, -8.8, gWN);
+  box(12.1, 0.3, 5.1, MAT.stone, 0, 0.15, -8.8, gWN);
+  const homeRoof = gableRoof(12, 5, 1.6, { over: 0.45 });
+  homeRoof.rotation.y = Math.PI / 2;
+  homeRoof.position.set(0, 3.2, -8.8);
+  gWN.add(homeRoof);
+  for (const sx of [-3.3, 3.3]) {
+    const w = new THREE.Mesh(scaleUV(new THREE.PlaneGeometry(1.6, 1.1), 1.6, 1.1), MAT.lattice);
+    w.position.set(sx, 1.75, -6.28);
+    add(w, gWN);
+  }
+  lantern(gWN, -2.8, 2.45, -6.0, 1.8);
+  lantern(gWN, 2.8, 2.45, -6.0, 1.8);
+  lantern(gWN, -1.2, 2.55, -6.0, 1.8);
+  lantern(gWN, 1.2, 2.55, -6.0, 1.8);
+
+  // 老家團圓木圓桌與熱騰騰野菜稀飯
+  const roundTable = add(new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.35, 0.08, 28), MAT.redwood), gWN);
+  roundTable.position.set(0, 0.78, -5.5);
+  for (const [dx, dz] of [[-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]]) {
+    box(0.09, 0.78, 0.09, MAT.wood, dx, 0.39, -5.5 + dz, gWN);
+  }
+  const bigBowl = add(new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.32, 0.28, 24), plain(0xd9c8a9, 0.35)), gWN);
+  bigBowl.position.set(0, 0.95, -5.5);
+  const greenPorridge = add(new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.04, 24), plain(0x558b2f, 0.25)), gWN);
+  greenPorridge.position.set(0, 1.08, -5.5);
+
+  const momNpc = createRealisticPerson({ x: -1.55, z: -5.3, rotY: 0.45, gownColor: 0x6e2c26, jacketColor: 0x8a382d, bunHair: true });
+  const daughterNpc = createRealisticPerson({ x: 1.55, z: -5.3, rotY: -0.45, gownColor: 0x3b4d66, jacketColor: 0x526885 });
+  gWN.add(momNpc, daughterNpc);
+}
+buildWorlds();
+
+/* =========================================================
+   5. 關卡與題庫資料 ST（10 站：3 劇情站 + 7 關卡，共 21 題）
+   完全依據確認後之對照表與課文原文逐字建立
+   ========================================================= */
+const ST = [
+  // 第 0 站：序章（第一段）
+  {
+    id: 0,
+    kind: 'story',
+    auto: true,
+    name: '序章：一葉菜的滋味',
+    env: 'dawn',
+    area: { x0: -16, x1: 16, z0: -16, z1: 16 },
+    para: '第一段',
+    text: '筷箸撈起一葉菜，吃進嘴裡的滋味卻各有不同。<em>有人吃的是健康，有人吃的是鄉愁。</em>'
+  },
+
+  // 第 1 站：第 1 關（第二段）★ 原型首關：含場景實地觀察熱點 inspect + 3 種不同題型
+  {
+    id: 1,
+    name: '第 1 關：廊道外的赤道櫻草',
+    env: 'hutong',
+    area: { x0: -16, x1: 16, z0: -16, z1: 16 },
+    quest: '探訪國小廊道外的街邊野菜',
+    obj: '走向國小紅磚廊道旁的社區婆婆與饕客，觀察街邊生長的赤道櫻草並完成閱讀挑戰。',
+    prompt: '上前觀察赤道櫻草',
+    target: () => new THREE.Vector3(-4.2, 1.1, -3.8),
+    para: '第二段',
+    text: '在原鄉東部生活了幾年，漸漸習慣滿眼綠意的環境，即使人在市區，也是轉幾個彎就能瞥見屋宇樓旁的幾畝稻田。<em>國小廊道外沿街生長的赤道櫻草，在路人的眼裡不過就是一片狂放的雜草，但社區婆婆叫它日本龍葵，說也是野菜的一種，細嫩好吃又不苦。</em>懂吃的饕客偶爾帶著大剪和提袋，蹲在街邊就大把大把的剪下帶回，或煮粥或下麵，是為日常寫照。',
+    inspect: [
+      { at: () => new THREE.Vector3(-5.1, 0.6, -4.2), tag: '🌿 觀察：赤道櫻草（日本龍葵）' },
+      { at: () => new THREE.Vector3(-3.8, 1.3, -4.5), tag: '👵 傾聽：社區婆婆介紹野菜' },
+      { at: () => new THREE.Vector3(-4.2, 0.5, -2.6), tag: '✂️ 檢視：饕客的大剪與提袋' }
+    ],
+    steps: [
+      {
+        type: 'choice',
+        level: '擷取訊息',
+        q: '根據文本第二段，社區婆婆所稱的「日本龍葵」（赤道櫻草），吃起來的口感與味道有什麼特色？',
+        options: [
+          '葉片細嫩好吃而且味道不苦',
+          '苦中帶有一抹甘甜且能明目',
+          '帶有濃烈海味適合拿來引味',
+          '口感爽脆微酸適合涼拌生食'
+        ],
+        answer: 0,
+        hint: '請重讀第二段中社區婆婆介紹日本龍葵的句子：「說也是野菜的一種，……」。'
+      },
+      {
+        type: 'fill',
+        level: '推論',
+        q: '【理解監控：字詞推論】根據上下文「帶著大剪和提袋，蹲在街邊就大把大把的剪下帶回，或煮粥或下麵」，文中用來稱呼「懂得品嘗並講究美食的人」的詞語是什麼？',
+        sentence: '懂吃的＿偶爾帶著大剪和提袋，蹲在街邊就大把大把的剪下帶回。',
+        tiles: ['饕客', '屋宇', '路人', '鄰居'],
+        answer: '饕客',
+        hint: '請看第二段最後一句，「懂吃的……」後面接著哪兩個字？'
+      },
+      {
+        type: 'tf',
+        level: '推論',
+        q: '根據文本，國小廊道外沿街生長的赤道櫻草，因為外型十分珍貴罕見，所以連一般經過的路人都會特地停下來採摘帶回家煮粥。',
+        answer: false,
+        hint: '請檢視第二段：赤道櫻草「在路人的眼裡」是什麼模樣？是誰才會帶著大剪和提袋來剪下帶回？'
+      }
+    ]
+  },
+
+  // 第 2 站：第 2 關（第三段）
+  {
+    id: 2,
+    name: '第 2 關：水泥叢林的夜思',
+    env: 'night',
+    area: { x0: -16, x1: 16, z0: -16, z1: 16 },
+    quest: '傾聽都市部落友人的思鄉心聲',
+    obj: '走向夜色中思念家鄉的部落友人，體會水泥叢林裡的鄉愁。',
+    prompt: '與部落友人對話',
+    target: () => new THREE.Vector3(4.2, 1.2, -6.5),
+    para: '第三段',
+    text: '先前把到國小旁剪野菜的事，講給離鄉到都市工作的部落友人聽，當作飯後閒談，她感嘆道：「真是太幸福了！」有時工作到身心疲乏，<em>水泥叢林的車龍人潮和人心較勁的尖銳步調，令她感到苦悶窒礙，每當夜深寂靜思鄉時，腦海裡第一時間浮現的，總是家裡慣煮的野菜稀飯。</em>',
+    steps: [
+      {
+        type: 'choice',
+        level: '推論',
+        q: '根據文本第一至三段，作者說「有人吃的是健康，有人吃的是鄉愁」，請問文中吃到「鄉愁」的人是誰？為什麼她聽到作者剪野菜會感嘆「真是太幸福了」？',
+        options: [
+          '在都市工作的部落友人，因為採摘路邊野菜加菜是她想念卻難得的原鄉幸福',
+          '住在國小旁的社區婆婆，因為年紀大了無法再親自走到深山裡採集野生龍葵',
+          '在山林間護木的鄰居，因為山上氣候冷冽只能吃泡麵而吃不到白米煮成的粥',
+          '初次來到東部旅遊的路人，因為在現代都市從未見過沿街狂放生長的赤道櫻草'
+        ],
+        answer: 0,
+        hint: '請對照第三段開頭：作者把到國小旁剪野菜的事講給誰聽？她在都市工作時最想念什麼？'
+      },
+      {
+        type: 'match',
+        level: '詮釋',
+        q: '【理解監控：詞語推論】請根據第三段上下文，將文中的詞語與其所描寫的都市生活情境配對：',
+        cards: ['水泥叢林', '較勁', '窒礙'],
+        zones: ['比喻高樓建築林立的現代都市', '人與人之間互相比較本領高下', '內心感到阻塞不順暢而苦悶'],
+        answer: {
+          '水泥叢林': '比喻高樓建築林立的現代都市',
+          '較勁': '人與人之間互相比較本領高下',
+          '窒礙': '內心感到阻塞不順暢而苦悶'
+        },
+        hint: '想想看：「叢林」由「水泥」構成是指什麼？「人心較勁」與「苦悶窒礙」分別形容什麼樣的都市壓力？'
+      },
+      {
+        type: 'fill',
+        level: '擷取訊息',
+        q: '根據文本第三段，當離鄉工作的部落友人在夜深寂靜思鄉時，腦海裡第一時間浮現的家鄉味是什麼？',
+        sentence: '每當夜深寂靜思鄉時，腦海裡第一時間浮現的，總是家裡慣煮的＿。',
+        tiles: ['野菜稀飯', '山產鮮味麵', '龍葵涼茶', '赤道櫻草'],
+        answer: '野菜稀飯',
+        hint: '請看第三段最後一句話。'
+      }
+    ]
+  },
+
+  // 第 3 站：第二幕過場（第四段前段）
+  {
+    id: 3,
+    kind: 'story',
+    auto: true,
+    name: '過場：灶火升起',
+    env: 'dawn',
+    para: '第四段（一）',
+    text: '「啵囉啵囉」冒著晶亮滾燙的小泡，那透亮的光澤帶著米香陣陣傳來。<em>老人家總習慣從白米入生水開始熬煮，像一種信念，一種不可動搖的生活習慣；</em>'
+  },
+
+  // 第 4 站：第 3 關（第四段中段）
+  {
+    id: 4,
+    name: '第 3 關：白米花與浪濤引味',
+    env: 'noon',
+    quest: '體驗熬煮野菜稀飯的五感變化',
+    obj: '走向部落廚房熱氣翻騰的爐灶前，感受白米花、小魚乾引味與龍葵入鍋的香氣。',
+    prompt: '查看熬煮中的粥鍋',
+    target: () => new THREE.Vector3(0, 1.3, -5.5),
+    para: '第四段（二）',
+    text: '當飽滿的白米在滾水爆出一朵朵鑲邊的白米花，<em>撒下一把小魚乾做引味，如變魔術般，瞬間熱氣將魚乾香以一種浪濤之姿勇猛的衝上鼻腔，以為是海味，卻在此時倒下大把龍葵入鍋，再好生攪拌。</em>',
+    steps: [
+      {
+        type: 'choice',
+        level: '擷取訊息',
+        q: '根據文本第四段，煮粥時「在滾水爆出一朵朵鑲邊的白米花」，句子中的「白米花」是用來形容什麼？',
+        options: [
+          '飽滿的白米在滾水中熬煮到裂開綻放的模樣',
+          '撒入鍋中的小魚乾在熱湯裡翻滾浮起的泡沫',
+          '龍葵白色的小花朵隨野菜一起倒入鍋中的景象',
+          '熄火前撒下的白色細鹽在粥面上形成的結晶'
+        ],
+        answer: 0,
+        hint: '請看原句：「當飽滿的白米在滾水爆出一朵朵鑲邊的白米花」。'
+      },
+      {
+        type: 'match',
+        level: '評鑑',
+        q: '【打開五感】作者透過鮮明的感官描寫讓讀者彷彿聞到、看到煮粥過程。請將下列文句配對至對應的感官描寫：',
+        cards: ['魚乾香以一種浪濤之姿勇猛的衝上鼻腔', '「啵囉啵囉」冒著晶亮滾燙的小泡', '飽滿的白米在滾水爆出一朵朵鑲邊的白米花'],
+        zones: ['嗅覺描寫', '聽覺與視覺描寫', '視覺描寫'],
+        answer: {
+          '魚乾香以一種浪濤之姿勇猛的衝上鼻腔': '嗅覺描寫',
+          '「啵囉啵囉」冒著晶亮滾燙的小泡': '聽覺與視覺描寫',
+          '飽滿的白米在滾水爆出一朵朵鑲邊的白米花': '視覺描寫'
+        },
+        hint: '注意「衝上鼻腔」、「啵囉啵囉（聲音）＋晶亮小泡（影像）」、「一朵朵鑲邊的白米花（外觀）」。'
+      },
+      {
+        type: 'tf',
+        level: '詮釋',
+        q: '在烹煮野菜稀飯時，老人家撒下一把小魚乾做「引味」，能藉由小魚乾獨特的海味香氣提升整鍋粥的風味層次，隨後再倒入大把龍葵與之融合。',
+        answer: true,
+        hint: '回想第四段中「撒下一把小魚乾做引味」以及「以為是海味，卻在此時倒下大把龍葵入鍋」的描寫。'
+      }
+    ]
+  },
+
+  // 第 5 站：第 4 關（第四段後段）
+  {
+    id: 5,
+    name: '第 4 關：熬一鍋翡翠糜粥',
+    env: 'noon',
+    quest: '完成野菜稀飯的最後調味與統整',
+    obj: '在爐灶旁觀察粥汁收乾轉為半透明草綠的過程，整理烹煮步驟。',
+    prompt: '品嘗翡翠般的野菜糜',
+    target: () => new THREE.Vector3(-1.2, 1.2, -5.2),
+    para: '第四段（三）',
+    text: '當粥汁收乾近乎黏稠時，粥色會轉為半透明草綠，米香也增添一股野地奔放的草鮮味。<em>熄火前，再以最簡單的細鹽調味，白米煮成糜，那黏稠、那光澤、那香氣，看似簡單，卻是村落生活裡難以取代的味覺記憶。</em>',
+    steps: [
+      {
+        type: 'order',
+        level: '統整',
+        q: '請根據第四段課文內容，將老人家烹煮「野菜稀飯」的五個步驟由先到後正確排列：',
+        items: [
+          '白米入生水開始熬煮至爆出白米花',
+          '撒下一把小魚乾做引味激發香氣',
+          '倒下大把龍葵入鍋並好生攪拌收乾',
+          '熄火前以最簡單的細鹽調味煮成糜'
+        ],
+        labels: ['最先進行的步驟', '最後完成的步驟'],
+        hint: '請依第四段敘述順序：生水熬煮白米 → 撒小魚乾引味 → 倒下大把龍葵攪拌 → 熄火前加細鹽調味。'
+      },
+      {
+        type: 'multi',
+        level: '擷取訊息',
+        q: '根據文本第四段，當倒下龍葵好生攪拌、粥汁收乾近乎黏稠並煮成「糜」時，文中出現了哪些視覺與嗅覺特徵？（選出全部正確答案）',
+        options: [
+          '粥色會轉為半透明草綠',
+          '米香增添一股野地奔放的草鮮味',
+          '呈現出黏稠與透亮的光澤',
+          '湯頭變成清澈冰涼的深褐色',
+          '散發出濃郁刺鼻的辣椒辛香味'
+        ],
+        answer: [0, 1, 2],
+        hint: '請看第四段後半段：「粥色會轉為半透明草綠，米香也增添一股野地奔放的草鮮味……那黏稠、那光澤、那香氣」。'
+      },
+      {
+        type: 'choice',
+        level: '詮釋',
+        q: '根據文本，為什麼作者說這鍋看似簡單的野菜稀飯，卻是「村落生活裡難以取代的味覺記憶」？',
+        options: [
+          '因為野菜與族人生活密不可分，熬粥過程承載長輩習慣與家鄉氣息',
+          '因為煮粥的白米與細鹽都必須在特定年祭時節向都市餐廳訂購取得',
+          '因為只有學會這道料理的作法，才能在山林裡從事護木和移植工作',
+          '因為這道料理製作過程極為繁複昂貴，一般家庭平時沒有機會品嘗'
+        ],
+        answer: 0,
+        hint: '結合第四段「不可動搖的生活習慣」與第五段「對族人來說，野菜是生活」來思考。'
+      }
+    ]
+  },
+
+  // 第 6 站：第 5 關（第五段）
+  {
+    id: 6,
+    name: '第 5 關：陽光下的苦甘涼茶',
+    env: 'field',
+    quest: '在田地與小徑邊尋找龍葵',
+    obj: '走向田間小徑旁，了解龍葵隨處生長的特性與長輩煮涼茶清熱明目的生活智慧。',
+    prompt: '採集陽光下的龍葵',
+    target: () => new THREE.Vector3(0, 1.0, -6.5),
+    para: '第五段',
+    text: '對族人來說，野菜是生活。龍葵可說是原鄉村落裡最常見的野菜，像陽光灑下的種，在盆栽植被裡、田地旁、小徑邊，只要有陽光照射，幾乎是隨處存在。或許是太常見了，平易近人的隨處可採，老人家有時在田間務農完，總是隨手採上一把回家，<em>夏天就加點小魚乾煮成清湯放在冰箱裡，冰涼苦甘的爽口滋味，熱了累了就當成涼茶飲用。龍葵味苦中一抹甘，若是旱季少雨，那吃起來就更眉頭緊蹙了，不過因有清熱解毒的益處，長輩們總是習慣在雙眼疲累時來上一碗，說是原本痠澀膏糊的雙眼可以恢復晨起的明亮感。</em>',
+    steps: [
+      {
+        type: 'multi',
+        level: '擷取訊息',
+        q: '根據文本第五段，為什麼作者說龍葵「像陽光灑下的種，平易近人的隨處可採」？文中提到它會生長在哪些地方？（選出全部正確答案）',
+        options: [
+          '盆栽植被裡',
+          '田地旁',
+          '小徑邊',
+          '只要有陽光照射幾乎隨處存在',
+          '陰暗完全沒有陽光的深海岩縫裡'
+        ],
+        answer: [0, 1, 2, 3],
+        hint: '請核對第五段第二句：「在盆栽植被裡、田地旁、小徑邊，只要有陽光照射，幾乎是隨處存在。」'
+      },
+      {
+        type: 'fill',
+        level: '推論',
+        q: '根據文本第五段，龍葵的味道「苦中一抹甘」，如果遇到「旱季少雨」，龍葵的苦味會變得更重，文中用哪一個四字詞語形容人們吃起來的表情反應？',
+        sentence: '龍葵味苦中一抹甘，若是旱季少雨，那吃起來就更＿了。',
+        tiles: ['眉頭緊蹙', '痠澀膏糊', '平易近人', '身心疲乏'],
+        answer: '眉頭緊蹙',
+        hint: '吃到更苦的龍葵時，眉頭會皺起來，請看第五段倒數第三行。'
+      },
+      {
+        type: 'choice',
+        level: '擷取訊息',
+        q: '根據文本第五段，長輩們在夏天田間務農完或雙眼疲累時，會如何料理龍葵？有什麼益處？',
+        options: [
+          '加點小魚乾煮成清湯冰在冰箱當涼茶喝，有清熱解毒、讓痠澀雙眼恢復明亮感的益處',
+          '直接生吃剛從田邊採下的龍葵葉片，能立刻補充體力並消除整天務農的肌肉痠痛',
+          '將龍葵放進滾燙的泡麵裡一起煮，能讓苦味完全消失並轉化為濃郁的海鮮甜味',
+          '把龍葵曬乾後磨成粉末泡成熱咖啡，能在寒冷的冬夜裡幫助長輩快速入睡'
+        ],
+        answer: 0,
+        hint: '請看第五段後半段關於「加點小魚乾煮成清湯放在冰箱裡」與「清熱解毒」、「雙眼疲累」的敘述。'
+      }
+    ]
+  },
+
+  // 第 7 站：第 6 關（第六段）
+  {
+    id: 7,
+    name: '第 6 關：山林間的加菜福利',
+    env: 'winterDawn',
+    quest: '探訪山林護木鄰居的野炊營地',
+    obj: '沿著茂密林道走向山上營地，看看鄰居如何用鳳尾蕨和過貓為泡麵升等。',
+    prompt: '走向山林野炊營地',
+    target: () => new THREE.Vector3(0, 1.0, -6.5),
+    para: '第六段',
+    text: '野菜，更是人們勞動於山林間的加菜福利。鄰居在山上工作，每早沿著茂密的林道小徑上山，與大自然為伍的他，日日忙著護木和移植工作，偶爾會在冷冽的山上煮鍋熱騰騰的泡麵填肚子。<em>營地旁隨手就可以採集到鮮嫩的鳳尾蕨和過貓來加菜，新鮮野菜一入鍋，簡單的泡麵立刻升等成山產鮮味麵。</em>穿著雨鞋踩在溼潤的青苔上，咬著嫩葉吸口熱湯再一邊眺望山下。光是聽他描述，就覺得那碗麵的滋味真是不一般。那野菜泡麵味，也是他的生活味。',
+    steps: [
+      {
+        type: 'match',
+        level: '擷取訊息',
+        q: '課文介紹了不同場景裡的野菜與料理方式，請根據全文內容將下列野菜與其出現的場景或料理配對：',
+        cards: ['赤道櫻草（日本龍葵）', '原鄉村落常見的龍葵', '山林營地旁的鳳尾蕨和過貓'],
+        zones: ['國小廊道外街邊剪回煮粥或下麵', '加小魚乾熬稀飯或煮成清湯當涼茶', '加入熱騰騰泡麵升等成山產鮮味麵'],
+        answer: {
+          '赤道櫻草（日本龍葵）': '國小廊道外街邊剪回煮粥或下麵',
+          '原鄉村落常見的龍葵': '加小魚乾熬稀飯或煮成清湯當涼茶',
+          '山林營地旁的鳳尾蕨和過貓': '加入熱騰騰泡麵升等成山產鮮味麵'
+        },
+        hint: '回想第二段（國小廊道外）、第四～五段（熬粥與煮清湯）、第六段（山上營地泡麵加菜）。'
+      },
+      {
+        type: 'choice',
+        level: '推論',
+        q: '根據文本第六段，為什麼作者說「光是聽他描述，就覺得那碗麵的滋味真是不一般。那野菜泡麵味，也是他的生活味」？',
+        options: [
+          '因為在冷冽山上護木勞動後，現採鮮嫩野菜入鍋並眺望山下，展現與自然為伍的生活滋味',
+          '因為鄰居帶上山的泡麵是由都市高級餐廳主廚特製的昂貴麵條，一般人在山下市場買不到',
+          '因為鳳尾蕨與過貓必須經過三天三夜的慢火熬煮才能消除毒性，整個料理過程非常艱辛',
+          '因為鄰居很少有機會到山上工作，這碗泡麵是他一生當中唯一一次在山上吃到的熱騰騰食物'
+        ],
+        answer: 0,
+        hint: '請看第六段鄰居「與大自然為伍」、「在冷冽的山上」、「採集鮮嫩的鳳尾蕨和過貓」、「一邊眺望山下」的描寫。'
+      },
+      {
+        type: 'tf',
+        level: '擷取訊息',
+        q: '根據文本第六段，在山上工作的鄰居每天忙著護木和移植工作，必須自己從山下市場購買鳳尾蕨和過貓背上山，才能替泡麵加菜。',
+        answer: false,
+        hint: '請看第六段：「營地旁隨手就可以採集到鮮嫩的鳳尾蕨和過貓來加菜」。'
+      }
+    ]
+  },
+
+  // 第 8 站：第四幕過場（第七段前段）
+  {
+    id: 8,
+    kind: 'story',
+    auto: true,
+    name: '過場：流水年尾',
+    env: 'winterDusk',
+    para: '第七段（一）',
+    text: '日子嘩啦啦如流水般，轉眼就要進入年尾，部落年祭就快來臨，想起那位在都市埋頭打拚的友人，問候她：「年祭時休假回臺東嗎？要不要聚餐？」<em>她笑著說：「早就訂好車票了。」</em>'
+  },
+
+  // 第 9 站：第 7 關（第七段後段）
+  {
+    id: 9,
+    name: '第 7 關：勝過山珍海味的家鄉味',
+    env: 'hutong',
+    quest: '迎接年祭返鄉的友人與媽媽的野菜稀飯',
+    obj: '走向溫暖的部落老家餐桌，體會那鍋苦甘、帶著家鄉青草香的思鄉味。',
+    prompt: '走向團圓餐桌',
+    target: () => new THREE.Vector3(0, 1.1, -5.5),
+    para: '第七段（二）',
+    text: '還跟家人說好了下火車的時間，用女兒最擅長的撒嬌術，央求媽媽煮一鍋野菜稀飯等她回家，什麼山珍海味都不要。<em>因為她日思夜想的，只有那鍋苦甘的，帶著家鄉青草香的，再多錢也買不來的思鄉味。</em>',
+    steps: [
+      {
+        type: 'choice',
+        level: '擷取訊息',
+        q: '根據文本第七段，在都市打拚的部落友人趁著年祭返鄉時，為什麼「什麼山珍海味都不要」，只央求媽媽煮一鍋野菜稀飯等她回家？',
+        options: [
+          '因為那鍋苦甘、帶著家鄉青草香的野菜稀飯，是再多金錢也買不來、她日思夜想的思鄉味',
+          '因為她最近身體不適正在節食，醫生規定她返鄉期間只能吃清淡的白米稀飯',
+          '因為部落在年祭期間有傳統規定，所有返鄉族人第一餐只能吃龍葵煮成的食物',
+          '因為火車抵達臺東的時間太晚，家裡附近所有的餐廳與市場都已經打烊休息了'
+        ],
+        answer: 0,
+        hint: '請看第七段最後一句：「因為她日思夜想的，只有那鍋苦甘的，帶著家鄉青草香的，再多錢也買不來的思鄉味。」'
+      },
+      {
+        type: 'match',
+        level: '統整',
+        q: '【全文重點統整】為什麼作者說「野菜，是部落不可缺的味」？請從「具體料理作用」與「抽象情感」整理全文重點：',
+        cards: ['煮粥時加入龍葵', '龍葵加小魚乾煮成清湯', '泡麵加入鳳尾蕨和過貓', '遊子日思夜想的野菜稀飯'],
+        zones: ['調味：增添野地奔放的草鮮味', '退火：當涼茶飲用，清熱解毒明目', '加料：立刻升等成山產鮮味麵', '情感：承載對家鄉與親人的思念'],
+        answer: {
+          '煮粥時加入龍葵': '調味：增添野地奔放的草鮮味',
+          '龍葵加小魚乾煮成清湯': '退火：當涼茶飲用，清熱解毒明目',
+          '泡麵加入鳳尾蕨和過貓': '加料：立刻升等成山產鮮味麵',
+          '遊子日思夜想的野菜稀飯': '情感：承載對家鄉與親人的思念'
+        },
+        hint: '對照課本思考題：⑴調味（煮粥）⑵退火（煮清湯）⑶加料（泡麵）與抽象層面的「思念家鄉」。'
+      },
+      {
+        type: 'choice',
+        level: '評鑑',
+        q: '綜觀全文，作者多次以「思鄉味」來指稱「野菜稀飯」，並在首尾呼應「有人吃的是鄉愁」。這樣的寫作安排有什麼深層用意？',
+        options: [
+          '突顯野菜與部落生活緊密相連，吃野菜稀飯不僅是味覺享受，更喚起對家鄉與親情的羈絆',
+          '說明東部的土壤與水質非常特殊，導致野菜無法在其他城市種植，只能當作觀光伴手禮盒',
+          '強調現代都市的飲食文化過於油膩不健康，呼籲所有都市人都應該改吃野菜稀飯來養生',
+          '為了比較不同品種野菜的營養價值高低，證明龍葵比赤道櫻草或鳳尾蕨更適合拿來熬煮成粥'
+        ],
+        answer: 0,
+        hint: '思考全文主旨：野菜和部落人生活密不可分，每當吃到野菜稀飯，家鄉的記憶與大自然的連結便湧上心頭。'
+      }
+    ]
+  }
+];
+
+/* 自動補齊 act、bgm、qn、連續題號 no，以及平均分配 choice 的正解位置 pos（確保 A-D 各占 25%） */
+(function initStationMeta() {
+  let qNo = 0, qn = 0, choiceIdx = 0;
+  // 8 題 choice 平均分配 0,1,2,3,0,1,2,3 (各 2 題 = 25%)
+  const posCycle = [0, 1, 2, 3, 1, 3, 0, 2];
+  ST.forEach((s, idx) => {
+    s.id = idx;
+    s.act = idx <= 2 ? 1 : (idx <= 5 ? 2 : (idx <= 7 ? 3 : 4));
+    s.bgm = s.act === 1 ? 'title' : (s.act === 2 ? 'noon' : (s.act === 3 ? 'title2' : 'winter'));
+    if (!s.steps) return;
+    s.qn = ++qn;
+    s.steps.forEach(q => {
+      q.no = ++qNo;
+      if (q.type === 'choice') {
+        const targetPos = posCycle[choiceIdx % posCycle.length];
+        choiceIdx++;
+        const correctText = q.options[q.answer];
+        const others = q.options.filter((_, i) => i !== q.answer);
+        const newOpts = [];
+        let oIdx = 0;
+        for (let k = 0; k < 4; k++) {
+          if (k === targetPos) newOpts.push(correctText);
+          else newOpts.push(others[oIdx++]);
+        }
+        q.options = newOpts;
+        q.answer = targetPos;
+        q.pos = targetPos;
+      }
+    });
+  });
+})();
+
+/* =========================================================
+   6. 玩家狀態 P、鍵盤 K、類比搖桿 JOY、遊戲主狀態 G
+   ========================================================= */
+const P = {
+  pos: new THREE.Vector3(0, 1.6, 2.5),
+  yaw: 0,
+  pitch: 0,
+  speed: 3.2,
+  area: W.area
+};
+const K = {};
+const JOY = { x: 0, y: 0, active: false };
+
+const G = {
+  mode: 'title',
+  station: 0,
+  hp: 100,
+  feathers: [],
+  mistakes: 0,
+  totalMistakes: 0,
+  ko: 0,
+  cleared: new Set(),
+  unlocked: false
+};
+
+/* 讀取存檔與證書紀錄（若有證書紀錄則自動解鎖全部關卡） */
+function loadStorageState() {
+  try {
+    const certs = JSON.parse(localStorage.getItem(CERT_KEY) || '[]');
+    if (Array.isArray(certs) && certs.length > 0) {
+      G.unlocked = true;
+    }
+    const sv = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (sv && typeof sv === 'object') {
+      if (typeof sv.station === 'number') G.station = sv.station;
+      if (typeof sv.hp === 'number') G.hp = sv.hp;
+      if (Array.isArray(sv.feathers)) G.feathers = sv.feathers;
+      if (typeof sv.totalMistakes === 'number') G.totalMistakes = sv.totalMistakes;
+      if (Array.isArray(sv.cleared)) G.cleared = new Set(sv.cleared);
+      if (sv.unlocked) G.unlocked = true;
+      document.getElementById('tCont').classList.remove('hide');
+    }
+  } catch (e) {}
+}
+
+function saveGame(showMsg = false) {
+  try {
+    const data = {
+      station: G.station,
+      hp: G.hp,
+      feathers: G.feathers,
+      totalMistakes: G.totalMistakes,
+      cleared: [...G.cleared],
+      unlocked: G.unlocked
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    document.getElementById('tCont').classList.remove('hide');
+    if (showMsg) toast('💾 進度已儲存！');
+  } catch (e) {}
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+function showBanner(sub, main) {
+  const b = document.getElementById('banner');
+  document.getElementById('bannerSub').textContent = sub;
+  document.getElementById('bannerMain').textContent = main;
+  b.classList.add('show');
+  setTimeout(() => b.classList.remove('show'), 2200);
+}
+
+/* =========================================================
+   7. 場景切換 placeWorld 與關卡進入 enterStation
+   ========================================================= */
+let inspectedSet = new Set();
+
+function placeWorld(n) {
+  if (n < ST.length) G.station = n;
+  const st = ST[Math.min(n, ST.length - 1)] || ST[0];
+  setEnv(st.env || 'hutong');
+  W.group.visible  = (st.act === 1);
+  R.group.visible  = (st.act === 2);
+  F.group.visible  = (st.act === 3);
+  WN.group.visible = (st.act === 4);
+
+  if (st.act === 1) P.area = st.area || W.area;
+  else if (st.act === 2) P.area = R.area;
+  else if (st.act === 3) P.area = F.area;
+  else P.area = WN.area;
+
+  // 設定玩家出生位置與朝向目標
+  P.pos.set(0, 1.6, 2.5);
+  P.pitch = 0;
+  if (st.target) {
+    const t = st.target();
+    P.yaw = Math.atan2(-(t.x - P.pos.x), -(t.z - P.pos.z));
+  } else {
+    P.yaw = 0;
+  }
+  updateHUD();
+}
+
+function showGameUI() {
+  document.getElementById('hud').classList.remove('hide');
+  updateHUD();
+}
+
+function updateHUD() {
+  document.getElementById('hpFill').style.width = `${Math.max(0, Math.min(100, G.hp))}%`;
+  document.getElementById('hpVal').textContent = Math.max(0, G.hp);
+  const totalLeaves = G.feathers.reduce((a, b) => a + (b || 0), 0);
+  document.getElementById('leafCount').textContent = totalLeaves;
+
+  const st = ST[G.station];
+  if (st && st.steps) {
+    document.getElementById('questTitle').textContent = `${st.name}｜${st.quest}`;
+    document.getElementById('questObj').textContent = st.obj;
+  } else if (st) {
+    document.getElementById('questTitle').textContent = st.name;
+    document.getElementById('questObj').textContent = '閱讀課文段落，感受原鄉野菜的滋味。';
+  }
+}
+
+function renderHotspots() {
+  const layer = document.getElementById('hotspotLayer');
+  layer.innerHTML = '';
+  const st = ST[G.station];
+  if (!st || !st.inspect || G.mode !== 'explore') return;
+
+  st.inspect.forEach((item, idx) => {
+    const btn = document.createElement('div');
+    btn.className = 'hotspot-marker' + (inspectedSet.has(idx) ? ' done' : '');
+    btn.textContent = (inspectedSet.has(idx) ? '✓ ' : '') + item.tag;
+    btn.dataset.idx = idx;
+    btn.addEventListener('click', () => {
+      SND.click();
+      inspectedSet.add(idx);
+      btn.classList.add('done');
+      btn.textContent = '✓ ' + item.tag;
+      toast(`已觀察：${item.tag}`);
+    });
+    layer.appendChild(btn);
+  });
+}
+
+function enterStation(n) {
+  if (n >= ST.length) {
+    G.station = ST.length;
+    saveGame();
+    openCertificateScreen();
+    return;
+  }
+  G.station = n;
+  G.hp = 100;
+  G.mistakes = 0;
+  inspectedSet.clear();
+  placeWorld(n);
+  showGameUI();
+  saveGame();
+
+  const st = ST[n];
+  const actNames = ['', '第一幕：街邊的綠意與思鄉', '第二幕：村落的味覺記憶', '第三幕：部落人的野菜日常', '第四幕：年祭歸鄉的思鄉味'];
+  showBanner(actNames[st.act] || '', st.name);
+
+  if (st.kind === 'story') {
+    G.mode = 'dialog';
+    document.getElementById('promptTag').classList.add('hide');
+    document.getElementById('hotspotLayer').innerHTML = '';
+    openStoryDialog(st);
+  } else {
+    G.mode = 'explore';
+    renderHotspots();
+  }
+}
+
+/* =========================================================
+   8. 課文對話框與互動答題流程
+   ========================================================= */
+function openStoryDialog(st) {
+  const dlg = document.getElementById('dialog');
+  document.getElementById('dlgPara').textContent = st.para || '課文段落';
+  document.getElementById('dlgTitle').textContent = st.name;
+  document.getElementById('dlgText').innerHTML = st.text;
+  const notice = document.getElementById('dlgInspectNotice');
+  if (st.inspect && st.inspect.length > 0) {
+    notice.classList.remove('hide');
+  } else {
+    notice.classList.add('hide');
+  }
+  const btn = document.getElementById('dlgBtn');
+  btn.textContent = st.kind === 'story' ? '繼續前進' : (st.dialogBtn || '接受挑戰');
+  dlg.classList.remove('hide');
+
+  btn.onclick = () => {
+    SND.click();
+    dlg.classList.add('hide');
+    if (st.kind === 'story') {
+      G.cleared.add(st.id);
+      enterStation(st.id + 1);
+    } else {
+      startQuizForStation(st);
+    }
+  };
+}
+
+function interact() {
+  const st = ST[G.station];
+  if (!st) return;
+  SND.click();
+  G.mode = 'dialog';
+  openStoryDialog(st);
+}
+
+let curStepIdx = 0;
+function startQuizForStation(st) {
+  curStepIdx = 0;
+  G.mode = 'quiz';
+  runStep(st, curStepIdx);
+}
+
+function hurt(hintText) {
+  SND.wrong();
+  G.mistakes++;
+  G.totalMistakes++;
+  G.hp = Math.max(0, G.hp - 35);
+  updateHUD();
+  const hEl = document.getElementById('qHint');
+  hEl.textContent = `💡 理解監控提示：${hintText}`;
+  hEl.classList.remove('hide');
+
+  if (G.hp <= 0) {
+    G.ko++;
+    toast('體力歸零！請重新閱讀本段課文再挑戰一次。');
+    setTimeout(() => {
+      document.getElementById('quiz').classList.add('hide');
+      G.hp = 100;
+      G.mistakes = 0;
+      updateHUD();
+      openStoryDialog(ST[G.station]);
+    }, 1100);
+  }
+}
+
+function runStep(st, idx) {
+  const q = st.steps[idx];
+  if (!q) {
+    // 本關完成
+    document.getElementById('quiz').classList.add('hide');
+    const gained = Math.max(1, 3 - G.mistakes);
+    G.feathers[st.id] = Math.max(G.feathers[st.id] || 0, gained);
+    G.cleared.add(st.id);
+    updateHUD();
+    saveGame();
+    SND.correct();
+    toast(`🎉 完成「${st.name}」！獲得 ${gained} 片鮮綠野菜葉 🌿`);
+
+    // 若是第 1 關（原型首關），提供繼續下一關或直接查看通關證書的提示
+    setTimeout(() => {
+      enterStation(st.id + 1);
+    }, 1200);
+    return;
+  }
+
+  const qModal = document.getElementById('quiz');
+  qModal.classList.remove('hide');
+  document.getElementById('qNo').textContent = `第 ${q.no} 題（本關 ${idx + 1}/${st.steps.length}）`;
+  document.getElementById('qLevel').textContent = `PIRLS 層次：${q.level}`;
+  document.getElementById('qStem').textContent = q.q;
+  const hEl = document.getElementById('qHint');
+  hEl.classList.add('hide');
+  hEl.textContent = '';
+
+  const body = document.getElementById('qBody');
+  body.innerHTML = '';
+  let checkAnswer = () => false;
+
+  if (q.type === 'choice') {
+    let picked = -1;
+    const list = document.createElement('div');
+    list.className = 'opt-list';
+    q.options.forEach((opt, oIdx) => {
+      const b = document.createElement('button');
+      b.className = 'opt-btn';
+      b.textContent = `${'ABCD'[oIdx]}. ${opt}`;
+      b.onclick = () => {
+        SND.click();
+        picked = oIdx;
+        [...list.children].forEach(c => c.classList.remove('sel'));
+        b.classList.add('sel');
+      };
+      list.appendChild(b);
+    });
+    body.appendChild(list);
+    checkAnswer = () => picked === q.answer;
+  } else if (q.type === 'tf') {
+    let picked = null;
+    const list = document.createElement('div');
+    list.className = 'opt-list';
+    [['⭕ 正確（符合課文）', true], ['❌ 錯誤（與課文不符）', false]].forEach(([lbl, val]) => {
+      const b = document.createElement('button');
+      b.className = 'opt-btn';
+      b.textContent = lbl;
+      b.onclick = () => {
+        SND.click();
+        picked = val;
+        [...list.children].forEach(c => c.classList.remove('sel'));
+        b.classList.add('sel');
+      };
+      list.appendChild(b);
+    });
+    body.appendChild(list);
+    checkAnswer = () => picked === q.answer;
+  } else if (q.type === 'fill') {
+    let pickedTile = '';
+    const sentBox = document.createElement('div');
+    sentBox.className = 'dialog-text';
+    const renderSentence = () => {
+      const blankHtml = `<b style="color:var(--gold);padding:0 6px;border-bottom:2px solid var(--gold);">${pickedTile || '＿＿'}</b>`;
+      sentBox.innerHTML = q.sentence.replace('＿', blankHtml);
+    };
+    renderSentence();
+    const bank = document.createElement('div');
+    bank.className = 'tile-bank';
+    q.tiles.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'tile-btn';
+      b.textContent = t;
+      b.onclick = () => {
+        SND.click();
+        pickedTile = t;
+        [...bank.children].forEach(c => c.classList.remove('sel'));
+        b.classList.add('sel');
+        renderSentence();
+      };
+      bank.appendChild(b);
+    });
+    body.append(sentBox, bank);
+    checkAnswer = () => pickedTile === q.answer;
+  } else if (q.type === 'multi') {
+    const pickedSet = new Set();
+    const list = document.createElement('div');
+    list.className = 'opt-list';
+    q.options.forEach((opt, oIdx) => {
+      const b = document.createElement('button');
+      b.className = 'opt-btn';
+      b.textContent = `☐ ${opt}`;
+      b.onclick = () => {
+        SND.click();
+        if (pickedSet.has(oIdx)) {
+          pickedSet.delete(oIdx);
+          b.classList.remove('sel');
+          b.textContent = `☐ ${opt}`;
+        } else {
+          pickedSet.add(oIdx);
+          b.classList.add('sel');
+          b.textContent = `☑ ${opt}`;
+        }
+      };
+      list.appendChild(b);
+    });
+    body.appendChild(list);
+    checkAnswer = () => {
+      if (pickedSet.size !== q.answer.length) return false;
+      return q.answer.every(a => pickedSet.has(a));
+    };
+  } else if (q.type === 'match') {
+    const userMap = {};
+    let activeCard = null;
+    const info = document.createElement('div');
+    info.style.cssText = 'font-size:20px;font-weight:bold;color:var(--gold2);margin-bottom:10px;';
+    info.textContent = '請先點擊左側項目，再點擊右側對應的說明完成配對：';
+    const grid = document.createElement('div');
+    grid.className = 'match-grid';
+    const leftCol = document.createElement('div');
+    leftCol.className = 'match-col';
+    const rightCol = document.createElement('div');
+    rightCol.className = 'match-col';
+
+    const renderMatch = () => {
+      leftCol.innerHTML = '';
+      rightCol.innerHTML = '';
+      q.cards.forEach(c => {
+        const id = typeof c === 'string' ? c : c.id;
+        const d = document.createElement('div');
+        d.className = 'match-item' + (activeCard === id ? ' sel' : '');
+        const paired = userMap[id] ? ` → 【${userMap[id]}】` : '';
+        d.textContent = id + paired;
+        d.onclick = () => { SND.click(); activeCard = id; renderMatch(); };
+        leftCol.appendChild(d);
+      });
+      q.zones.forEach(z => {
+        const d = document.createElement('div');
+        d.className = 'match-item';
+        d.textContent = z;
+        d.onclick = () => {
+          if (!activeCard) return;
+          SND.click();
+          userMap[activeCard] = z;
+          activeCard = null;
+          renderMatch();
+        };
+        rightCol.appendChild(d);
+      });
+    };
+    renderMatch();
+    grid.append(leftCol, rightCol);
+    body.append(info, grid);
+    checkAnswer = () => {
+      return Object.keys(q.answer).every(k => userMap[k] === q.answer[k]);
+    };
+  } else if (q.type === 'order') {
+    const curItems = [...q.items].reverse();
+    const wrap = document.createElement('div');
+    const topLbl = document.createElement('div');
+    topLbl.style.cssText = 'font-size:19px;font-weight:bold;color:var(--gold);margin-bottom:8px;';
+    topLbl.textContent = `▲ ${q.labels[0]}`;
+    const botLbl = document.createElement('div');
+    botLbl.style.cssText = 'font-size:19px;font-weight:bold;color:var(--gold);margin-top:8px;';
+    botLbl.textContent = `▼ ${q.labels[1]}`;
+    const listWrap = document.createElement('div');
+
+    const renderOrder = () => {
+      listWrap.innerHTML = '';
+      curItems.forEach((txt, i) => {
+        const row = document.createElement('div');
+        row.className = 'order-row';
+        const span = document.createElement('span');
+        span.textContent = `${i + 1}. ${txt}`;
+        const btns = document.createElement('div');
+        btns.className = 'order-SideBtns';
+        const up = document.createElement('button');
+        up.textContent = '↑';
+        up.onclick = () => {
+          if (i === 0) return;
+          SND.click();
+          [curItems[i - 1], curItems[i]] = [curItems[i], curItems[i - 1]];
+          renderOrder();
+        };
+        const dn = document.createElement('button');
+        dn.textContent = '↓';
+        dn.onclick = () => {
+          if (i === curItems.length - 1) return;
+          SND.click();
+          [curItems[i + 1], curItems[i]] = [curItems[i], curItems[i + 1]];
+          renderOrder();
+        };
+        btns.append(up, dn);
+        row.append(span, btns);
+        listWrap.appendChild(row);
+      });
+    };
+    renderOrder();
+    wrap.append(topLbl, listWrap, botLbl);
+    body.appendChild(wrap);
+    checkAnswer = () => curItems.every((it, idx) => it === q.items[idx]);
+  }
+
+  document.getElementById('qReread').onclick = () => {
+    SND.click();
+    toast(`課文段落：${st.text.replace(/<[^>]+>/g, '')}`);
+  };
+
+  document.getElementById('qSubmit').onclick = () => {
+    if (checkAnswer()) {
+      SND.correct();
+      curStepIdx++;
+      runStep(st, curStepIdx);
+    } else {
+      hurt(q.hint);
+    }
+  };
+}
+
+/* =========================================================
+   9. 通關證書繪製（1200x840 Canvas → PNG dataURL）與解鎖驗證
+   ========================================================= */
+function drawCertificateCanvas(rec) {
+  const c = document.createElement('canvas');
+  c.width = 1200;
+  c.height = 840;
+  const ctx = c.getContext('2d');
+
+  // 1. 漸層底色與米宣紙紋理感
+  const bgGrad = ctx.createLinearGradient(0, 0, 1200, 840);
+  bgGrad.addColorStop(0, '#f8f3e3');
+  bgGrad.addColorStop(0.5, '#efe4c8');
+  bgGrad.addColorStop(1, '#e3d2a8');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 1200, 840);
+
+  // 裝飾山林與野菜綠意背景色塊
+  ctx.fillStyle = 'rgba(76, 145, 85, 0.12)';
+  ctx.beginPath();
+  ctx.arc(200, 680, 260, 0, Math.PI * 2);
+  ctx.arc(1020, 180, 220, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. 雙層古典金綠邊框
+  ctx.strokeStyle = '#8b6924';
+  ctx.lineWidth = 10;
+  ctx.strokeRect(36, 36, 1128, 768);
+  ctx.strokeStyle = '#2e6b3b';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(52, 52, 1096, 736);
+
+  // 四角裝飾花紋
+  const corners = [[52, 52], [1148, 52], [52, 788], [1148, 788]];
+  ctx.fillStyle = '#b8862d';
+  corners.forEach(([cx, cy]) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 3. 標題與主文
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#244d2c';
+  ctx.font = 'bold 28px "Noto Serif TC", "Microsoft JhengHei", serif';
+  ctx.fillText('國小國語六上 · 閱讀階梯一 · 沉浸式 3D 閱讀學習證書', 600, 135);
+
+  ctx.fillStyle = '#7a5216';
+  ctx.font = 'bold 54px "Noto Serif TC", "Microsoft JhengHei", serif';
+  ctx.fillText('〈野菜，部落不可缺的味〉通關證書', 600, 215);
+
+  // 分隔線
+  ctx.strokeStyle = '#b8862d';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(240, 245);
+  ctx.lineTo(960, 245);
+  ctx.stroke();
+
+  // 學生姓名
+  ctx.fillStyle = '#1a281e';
+  ctx.font = '32px "Noto Serif TC", "Microsoft JhengHei", serif';
+  ctx.fillText(`茲證明　${rec.name}　同學`, 600, 320);
+
+  ctx.font = '26px "Noto Serif TC", "Microsoft JhengHei", serif';
+  ctx.fillStyle = '#384a3c';
+  ctx.fillText('深入探索原鄉東部街角、部落廚房與山林小徑，完成理解監控與五感閱讀挑戰', 600, 380);
+
+  // 榮譽稱號框
+  ctx.fillStyle = '#265933';
+  ctx.fillRect(330, 420, 540, 86);
+  ctx.strokeStyle = '#e6c677';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(330, 420, 540, 86);
+
+  ctx.fillStyle = '#ffe9a6';
+  ctx.font = 'bold 40px "Noto Serif TC", "Microsoft JhengHei", serif';
+  ctx.fillText(`榮獲稱號：${rec.grade}`, 600, 476);
+
+  // 學習統計
+  ctx.fillStyle = '#2c3d30';
+  ctx.font = '24px "Noto Serif TC", "Microsoft JhengHei", serif';
+  ctx.fillText(`收集野菜葉：${rec.got} / ${rec.max}　｜　剩餘體力：${rec.hp}　｜　失誤次數：${rec.mistakes}`, 600, 565);
+
+  // 野菜葉插畫圖騰
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = i % 2 === 0 ? '#3b8c47' : '#63b85c';
+    ctx.beginPath();
+    ctx.ellipse(480 + i * 60, 625, 18, 9, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 日期
+  ctx.fillStyle = '#4e5c50';
+  ctx.font = '22px "Noto Serif TC", "Microsoft JhengHei", serif';
+  ctx.fillText(`頒發日期：${rec.date}`, 600, 710);
+
+  // 4. 紅色朱印
+  ctx.save();
+  ctx.translate(930, 640);
+  ctx.rotate(-0.08);
+  ctx.strokeStyle = '#b8281e';
+  ctx.lineWidth = 5;
+  ctx.strokeRect(-64, -64, 128, 128);
+  ctx.fillStyle = 'rgba(184, 40, 30, 0.14)';
+  ctx.fillRect(-60, -60, 120, 120);
+  ctx.fillStyle = '#b8281e';
+  ctx.font = 'bold 26px "Noto Serif TC", "Microsoft JhengHei", serif';
+  ctx.fillText('原鄉尋味', 0, -12);
+  ctx.fillText('閱讀認證', 0, 28);
+  ctx.restore();
+
+  return c.toDataURL('image/png');
+}
+
+function openCertificateScreen() {
+  G.mode = 'cert';
+  document.getElementById('title').classList.add('hide');
+  document.getElementById('hud').classList.add('hide');
+  document.getElementById('promptTag').classList.add('hide');
+  document.getElementById('cert').classList.remove('hide');
+
+  let certs = [];
+  try { certs = JSON.parse(localStorage.getItem(CERT_KEY) || '[]'); } catch (e) {}
+
+  let rec = certs[0];
+  if (!rec) {
+    const got = G.feathers.reduce((a, b) => a + (b || 0), 0);
+    const max = ST.filter(s => s.steps).length * 3;
+    const ratio = max > 0 ? got / max : 1;
+    const grade = (GRADES.find(g => ratio >= g[0]) || GRADES[GRADES.length - 1])[1];
+    const now = new Date();
+    rec = {
+      name: document.getElementById('certStudentName').value.trim() || '尋味旅人',
+      grade,
+      got,
+      max,
+      hp: G.hp || 100,
+      mistakes: G.totalMistakes || 0,
+      date: `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`,
+      ts: Date.now()
+    };
+    certs.unshift(rec);
+    try { localStorage.setItem(CERT_KEY, JSON.stringify(certs.slice(0, 30))); } catch (e) {}
+  } else {
+    document.getElementById('certStudentName').value = rec.name;
+  }
+
+  G.unlocked = true;
+  saveGame();
+
+  const imgEl = document.getElementById('certImg');
+  imgEl.src = drawCertificateCanvas(rec);
+
+  document.getElementById('certGenBtn').onclick = () => {
+    SND.click();
+    const newName = document.getElementById('certStudentName').value.trim() || '尋味旅人';
+    rec.name = newName;
+    certs[0] = rec;
+    try { localStorage.setItem(CERT_KEY, JSON.stringify(certs.slice(0, 30))); } catch (e) {}
+    imgEl.src = drawCertificateCanvas(rec);
+  };
+
+  document.getElementById('certDl').onclick = () => {
+    SND.click();
+    const a = document.createElement('a');
+    a.href = imgEl.src;
+    a.download = `${rec.name}_野菜部落不可缺的味_通關證書.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  document.getElementById('certStages').onclick = () => {
+    SND.click();
+    document.getElementById('cert').classList.add('hide');
+    openStagesModal();
+  };
+
+  document.getElementById('certHome').onclick = () => {
+    SND.click();
+    document.getElementById('cert').classList.add('hide');
+    document.getElementById('title').classList.remove('hide');
+  };
+}
+
+/* =========================================================
+   10. 關卡一覽與教師密碼 8888 解鎖
+   ========================================================= */
+function openStagesModal() {
+  const modal = document.getElementById('stagesModal');
+  const list = document.getElementById('stageList');
+  list.innerHTML = '';
+
+  ST.forEach(s => {
+    const canPlay = G.unlocked || G.cleared.has(s.id) || s.id <= Math.max(1, G.station);
+    const d = document.createElement('div');
+    d.className = 'stage-item' + (!canPlay ? ' locked' : '') + (G.station === s.id ? ' current' : '');
+    const tag = s.kind === 'story' ? '📖 劇情' : `🌿 關卡 (${G.feathers[s.id] || 0}/3)`;
+    d.innerHTML = `<div style="font-size:17px;color:var(--gold2);font-weight:bold;">${tag}</div><div style="font-size:21px;font-weight:bold;margin-top:6px;">${s.name}</div>`;
+    d.onclick = () => {
+      if (!canPlay) {
+        toast('🔒 尚未解鎖此關卡');
+        return;
+      }
+      SND.click();
+      modal.classList.add('hide');
+      document.getElementById('tut').classList.add('hide');
+      document.getElementById('dialog').classList.add('hide');
+      document.getElementById('quiz').classList.add('hide');
+      document.getElementById('title').classList.add('hide');
+      enterStation(s.id);
+    };
+    list.appendChild(d);
+  });
+
+  modal.classList.remove('hide');
+}
+
+document.getElementById('btnUnlockPw').onclick = () => {
+  const pw = document.getElementById('teacherPw').value.trim();
+  if (pw === '8888') {
+    G.unlocked = true;
+    saveGame();
+    SND.correct();
+    toast('🔓 教師密碼驗證成功！已解鎖全部關卡。');
+    openStagesModal();
+  } else {
+    SND.wrong();
+    toast('密碼不正確');
+  }
+};
+document.getElementById('stagesClose').onclick = () => {
+  SND.click();
+  document.getElementById('stagesModal').classList.add('hide');
+};
+
+/* =========================================================
+   11. 電腦鍵盤滑鼠與手機觸控類比搖桿事件（通過 touch_check.py 驗證）
+   ========================================================= */
+window.addEventListener('keydown', e => {
+  K[e.code] = true;
+  if ((e.code === 'KeyE' || e.code === 'Space') && G.mode === 'explore') {
+    const st = ST[G.station];
+    if (st && st.target && P.pos.distanceTo(st.target()) < 4.5) interact();
+  }
+});
+window.addEventListener('keyup', e => { K[e.code] = false; });
+
+// 滑鼠拖曳轉視角
+let mouseDragging = false, lastMX = 0, lastMY = 0;
+canvas.addEventListener('mousedown', e => {
+  mouseDragging = true;
+  lastMX = e.clientX;
+  lastMY = e.clientY;
+});
+window.addEventListener('mousemove', e => {
+  if (!mouseDragging || G.mode !== 'explore') return;
+  const dx = e.clientX - lastMX;
+  const dy = e.clientY - lastMY;
+  lastMX = e.clientX;
+  lastMY = e.clientY;
+  P.yaw -= dx * 0.0045;
+  P.pitch = Math.max(-0.7, Math.min(0.7, P.pitch - dy * 0.0035));
+});
+window.addEventListener('mouseup', () => { mouseDragging = false; });
+
+// 觸控類比搖桿 #pad 與畫面拖曳轉視角
+const padEl = document.getElementById('pad');
+const knobEl = document.getElementById('padKnob');
+let padTouchId = null;
+let lookTouchId = null, lastLX = 0, lastLY = 0;
+
+function updatePadFromPoint(clientX, clientY) {
+  const r = padEl.getBoundingClientRect();
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  const maxR = r.width / 2 - 12;
+  let dx = clientX - cx;
+  let dy = clientY - cy;
+  const dist = Math.hypot(dx, dy);
+  if (dist > maxR && dist > 0) {
+    dx = (dx / dist) * maxR;
+    dy = (dy / dist) * maxR;
+  }
+  JOY.x = dx / maxR;
+  JOY.y = dy / maxR;
+  JOY.active = true;
+  knobEl.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+}
+
+function resetPad() {
+  padTouchId = null;
+  JOY.x = 0;
+  JOY.y = 0;
+  JOY.active = false;
+  knobEl.style.transform = '';
+}
+
+window.addEventListener('touchstart', e => {
+  const padRect = padEl.getBoundingClientRect();
+  for (const t of e.changedTouches) {
+    const inPad = (
+      padRect.width > 0 &&
+      t.clientX >= padRect.left - 8 && t.clientX <= padRect.right + 8 &&
+      t.clientY >= padRect.top - 8 && t.clientY <= padRect.bottom + 8
+    );
+    if (inPad && padTouchId === null) {
+      padTouchId = t.identifier;
+      updatePadFromPoint(t.clientX, t.clientY);
+    } else if (!inPad && lookTouchId === null && G.mode === 'explore') {
+      lookTouchId = t.identifier;
+      lastLX = t.clientX;
+      lastLY = t.clientY;
+    }
+  }
+}, { passive: true });
+
+window.addEventListener('touchmove', e => {
+  for (const t of e.changedTouches) {
+    if (t.identifier === padTouchId) {
+      updatePadFromPoint(t.clientX, t.clientY);
+    } else if (t.identifier === lookTouchId && G.mode === 'explore') {
+      const dx = t.clientX - lastLX;
+      const dy = t.clientY - lastLY;
+      lastLX = t.clientX;
+      lastLY = t.clientY;
+      P.yaw -= dx * 0.0055;
+      P.pitch = Math.max(-0.7, Math.min(0.7, P.pitch - dy * 0.004));
+    }
+  }
+}, { passive: true });
+
+function handleTouchEnd(e) {
+  for (const t of e.changedTouches) {
+    if (t.identifier === padTouchId) resetPad();
+    if (t.identifier === lookTouchId) lookTouchId = null;
+  }
+}
+window.addEventListener('touchend', handleTouchEnd, { passive: true });
+window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+/* =========================================================
+   12. 標題與 HUD 按鈕綁定
+   ========================================================= */
+document.getElementById('tStart').onclick = () => {
+  SND.click();
+  document.getElementById('title').classList.add('hide');
+  if (localStorage.getItem('bird-tut') !== '1') {
+    document.getElementById('tutOk').textContent = '進入第 1 關體驗';
+    document.getElementById('tut').classList.remove('hide');
+  } else {
+    // 直接進入第 1 關可玩原型（亦可由關卡一覽讀序章）
+    enterStation(1);
+  }
+};
+
+document.getElementById('tutOk').onclick = () => {
+  SND.click();
+  try { localStorage.setItem('bird-tut', '1'); } catch (e) {}
+  document.getElementById('tut').classList.add('hide');
+  if (G.mode === 'title') {
+    enterStation(1);
+  }
+};
+
+document.getElementById('tCont').onclick = () => {
+  SND.click();
+  document.getElementById('title').classList.add('hide');
+  if (G.station >= ST.length) {
+    openCertificateScreen();
+  } else {
+    enterStation(G.station);
+  }
+};
+
+document.getElementById('tStages').onclick = () => { SND.click(); openStagesModal(); };
+document.getElementById('btnStages').onclick = () => {
+  SND.click();
+  document.getElementById('tut').classList.add('hide');
+  openStagesModal();
+};
+document.getElementById('btnHelp').onclick = () => {
+  SND.click();
+  document.getElementById('stagesModal').classList.add('hide');
+  document.getElementById('tutOk').textContent = G.mode === 'title' ? '進入第 1 關體驗' : '關閉說明';
+  document.getElementById('tut').classList.remove('hide');
+};
+document.getElementById('btnSave').onclick = () => { SND.click(); saveGame(true); };
+document.getElementById('btnMute').onclick = e => {
+  AU.muted = !AU.muted;
+  e.currentTarget.textContent = AU.muted ? '🔇 靜音' : '🔊 音效';
+};
+document.getElementById('promptTag').onclick = () => {
+  if (G.mode === 'explore') interact();
+};
+
+/* =========================================================
+   13. 主迴圈（移動、邊界檢查、3D 投影菱形與熱點、渲染）
+   ========================================================= */
+let prevTime = performance.now();
+const promptEl = document.getElementById('promptTag');
+const promptTxtEl = document.getElementById('promptTxt');
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = Math.min(0.05, (now - prevTime) / 1000);
+  prevTime = now;
+
+  if (G.mode === 'explore') {
+    let f = 0, s = 0;
+    if (K['KeyW'] || K['ArrowUp']) f += 1;
+    if (K['KeyS'] || K['ArrowDown']) f -= 1;
+    if (K['KeyA'] || K['ArrowLeft']) s -= 1;
+    if (K['KeyD'] || K['ArrowRight']) s += 1;
+
+    if (JOY.active || JOY.x !== 0 || JOY.y !== 0) {
+      f += -JOY.y;
+      s += JOY.x;
+    }
+
+    const mag = Math.hypot(f, s);
+    if (mag > 1) { f /= mag; s /= mag; }
+
+    if (mag > 0.01) {
+      const sin = Math.sin(P.yaw), cos = Math.cos(P.yaw);
+      const vx = (-sin * f + cos * s) * P.speed * dt;
+      const vz = (-cos * f - sin * s) * P.speed * dt;
+      const nx = P.pos.x + vx;
+      const nz = P.pos.z + vz;
+      const area = P.area || W.area;
+      if (nx >= area.x0 && nx <= area.x1 && nz >= area.z0 && nz <= area.z1) {
+        P.pos.x = nx;
+        P.pos.z = nz;
+      } else {
+        toast('已達活動範圍邊界，請往目標方向探索！');
+      }
+    }
+  }
+
+  // 更新相機位置與旋轉
+  camera.position.copy(P.pos);
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = P.yaw;
+  camera.rotation.x = P.pitch;
+
+  // 更新提示菱形與熱點投影
+  const st = ST[G.station];
+  if (G.mode === 'explore' && st && st.target) {
+    const tPos = st.target().clone();
+    const proj = tPos.project(camera);
+    if (proj.z < 1) {
+      const sx = (proj.x * 0.5 + 0.5) * window.innerWidth;
+      const sy = (-proj.y * 0.5 + 0.5) * window.innerHeight;
+      promptEl.style.left = `${sx}px`;
+      promptEl.style.top = `${sy}px`;
+      promptTxtEl.textContent = st.prompt || '走上前';
+      promptEl.classList.remove('hide');
+    } else {
+      promptEl.classList.add('hide');
+    }
+
+    // 同步更新 inspect 熱點螢幕座標
+    if (st.inspect) {
+      const markers = document.getElementById('hotspotLayer').children;
+      st.inspect.forEach((it, idx) => {
+        const m = markers[idx];
+        if (!m) return;
+        const p = it.at().clone().project(camera);
+        if (p.z < 1) {
+          m.style.left = `${(p.x * 0.5 + 0.5) * window.innerWidth}px`;
+          m.style.top = `${(-p.y * 0.5 + 0.5) * window.innerHeight}px`;
+          m.style.display = 'block';
+        } else {
+          m.style.display = 'none';
+        }
+      });
+    }
+  } else {
+    promptEl.classList.add('hide');
+  }
+
+  composer.render();
+}
+
+window.addEventListener('resize', () => {
+  syncAppHeight();
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* =========================================================
+   14. 除錯鉤子 window.__bird 與完成載入
+   ========================================================= */
+window.__bird = {
+  G, P, K, JOY, ST, W, R, F, WN, ENV, MUSIC, AU, SND,
+  enterStation, placeWorld, interact, showGameUI, updateHUD, setEnv
+};
+
+loadStorageState();
+{
+  const savedStation = G.station;
+  placeWorld(savedStation < ST.length ? savedStation : 1);
+  G.station = savedStation;
+}
+document.getElementById('loadBar').style.width = '100%';
+document.getElementById('loadTxt').textContent = '載入完成！';
+document.getElementById('loading').classList.add('done');
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
